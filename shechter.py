@@ -51,15 +51,100 @@ def BTFR(Mbar,slope,const):
     #print(10.**logv)
     return 10.**(logv)
 
-def expdisk(DHI):
-    Rs   = DHI*0.18*0.5
-    Sig0 = 1./np.exp(-(DHI/2.)/Rs)
-    return Rs, Sig0
+def expdisk(R1,Mass,i):
+    #Have to find Sigma_centre
+    #b = 0.8 * (R1)
+    b = np.zeros_like(R1)
+    bco = np.arange(0.5,1.01,0.01)
+    #b = (R1) np.arange(0.5,1.,0.01)
+    #Flux should give you the mass of the galaxy
+    for j, R in enumerate(R1):
+        for k, b_temp in enumerate(bco):
+            Rb = b_temp * R
+            Rs = R * 0.18
+            out = 1.5*R
+            minus = 1000.**2.*Rs*(out+Rs)*2.*np.pi*np.exp((R-out)/R)
+            MGuess=2.*np.pi*np.exp((R-Rb)/Rs)*((Rb*1000.)**2.+1000.**2.*Rs*(Rb+Rs)) - minus
+            if j==i:
+                MGuess_i=MGuess
+                minus_i = minus
+            if abs(100*((MGuess-Mass[j])/Mass[j]) ) < 10.:
+                b[j] = Rb
+                #if j==i:
+                    #print(100*((MGuess_i-Mass[j])/Mass[j]),MGuess_i/Mass[i]*100,np.array([MGuess_i]),Mass[i],R,b_temp)
+                break
+    Rs   = (R1)*0.18
+    Fluxc = np.exp((R1 - b)/Rs) 
+    print(Fluxc,b/R1)
+    print(MGuess_i/Mass[i]*100,'% subtract part',minus_i/Mass[i]*100.,'%')
+
+    return Rs, Fluxc,b
+#def expdisk(R1,Mass,i):
+#    #Have to find Sigma_centre
+#    #b = 0.8 * (R1)
+#    b = np.zeros_like(R1)
+#    bco = np.arange(0.5,1.01,0.01)
+#    #b = (R1) np.arange(0.5,1.,0.01)
+#    #Flux should give you the mass of the galaxy
+#    for j, R in enumerate(R1):
+#        for k, b_temp in enumerate(bco):
+#            Rb = b_temp * R
+#            Rs = R * 0.18
+#            out = 1.5*R
+#            minus = 1000.**2.*Rs*(out+Rs)*2.*np.pi*np.exp((R-out)/R)
+#            MGuess=2.*np.pi*np.exp((R-Rb)/Rs)*((Rb*1000.)**2.+1000.**2.*Rs*(Rb+Rs)) - minus
+#            if j==i:
+#                MGuess_i=MGuess
+#                minus_i = minus
+#            if abs(100*((MGuess-Mass[j])/Mass[j]) ) < 10.:
+#                b[j] = Rb
+#                #if j==i:
+#                    #print(100*((MGuess_i-Mass[j])/Mass[j]),MGuess_i/Mass[i]*100,np.array([MGuess_i]),Mass[i],R,b_temp)
+#                break
+#    Rs   = (R1)*0.18
+#    Fluxc = np.exp((R1 - b)/Rs) 
+#    print(Fluxc,b/R1)
+#    print(MGuess_i/Mass[i]*100,'% subtract part',minus_i/Mass[i]*100.,'%')
+#
+#    return Rs, Fluxc,b
+
+
+#def expdisk(R1,Mass,i):
+#    Rs   = (R1)*0.18
+#    #Have to find Sigma_centre
+#    b = 0.8 * (R1)
+#    bco = np.arange(0.5,1.01,0.01)
+#    #Flux should give you the mass of the galaxy
+#    Fluxc = np.exp((R1 - b)/Rs) #Mass / (2. * np.pi * (0.5*( b*1000.)**2. + Rs*1000.*(Rs*1000.+b*1000.)*np.exp(R1/Rs)*np.exp(-b/Rs)))
+#    #print('Flux',Fluxc)
+#    #Sig0 = 1./np.exp(-(DHI/2.)/Rs)
+#    out = 2.*R1[i]
+#    minus = 1000.**2.*Rs[i]*(out+Rs[i])*2.*np.pi*np.exp((R1[i]-out)/Rs[i])
+#    MGuess=2.*np.pi*np.exp((R1[i]-b[i])/Rs[i])*((b[i]*1000.)**2.+1000.**2.*Rs[i]*(b[i]+Rs[i])) - minus
+#    print(MGuess/Mass[i]*100,'% subtract part',minus/Mass[i]*100.,'%')
+#    return Rs, Fluxc,b
+
+def nearest(find,Mass):
+    #Mtest = 2. * np.pi * Rs**2. * Sig0 * 0.236 * 1000.**2.
+    # I need Sigma_0 and the high point ~4.5 Msun/pc^2
+    #Mtest = 2. * np.pi * Rs (Rs + b)*np.exp(b/Rs)
+    #print('Mtest',Mtest[i],'%',Mtest[i]/MHI[i])
+    distmin = 1.E15
+    for i, valu in enumerate(np.log10(Mass)):
+        dist = abs(valu**2. - find**2.)
+        if dist < distmin:
+            distmin = dist
+            j = i
+    return np.array([j])
+
 
 ####################################
-MHI = np.round(10.**(np.arange(5.,11.,.1)),1)
+MHI = np.round(10.**(np.arange(4.,12.1,.1)),1)
 i=input('Input HI Mass (dex):\n')
-i=np.where(MHI==round(10.**float(i),1))
+print(10.**float(i))
+#i=np.where(MHI==round(10.**float(i),0))
+#i=np.where(float(i)==np.log10(MHI))
+i = nearest(float(i),MHI)
 print('HI Mass:',MHI[i]*u.Msun)
 ####################################
 # Martin et al 2010 
@@ -78,7 +163,7 @@ DHI_intercept   =  -3.32
 DHI = DHI(MHI,DHI_slope, DHI_intercept)
 print('HI Radius:',DHI[i]*u.kpc)
 ####################################
-# Bradford et al 2015
+# Bradford et al 2015, right after eq 4
 # https://arxiv.org/abs/1505.04819
 split           = 9.2832
 Mgas            = MHI * 1.4
@@ -102,14 +187,28 @@ print('Vflat:',v[i]*u.km/u.s)
 # Jing et al 2014
 # https://arxiv.org/abs/1401.8164
 # scale length = 0.18 RHI
-Rs, Sig0 = expdisk(DHI)
+Rs, Sig0, b = expdisk(DHI/2.,MHI,i)
 print('HI Scale length:',Rs[i]*u.kpc)
 print('Central density:',Sig0[i]*u.Msun/u.pc**2.)
 
+radi = np.arange(0.,DHI[i],0.001)
+sbr = np.zeros_like(radi)
+for j, r in enumerate(radi):
+    if r < b[i]:
+        sbr[j] = Sig0[i]
+    else:
+        sbr[j] = (Sig0[i]/np.exp(-b[i]/Rs[i])) * np.exp(-r/Rs[i])
 
-
-
-
+plt.semilogy(radi/(DHI[i]/2.),sbr)
+plt.axvline(1.)
+plt.axhline(1.)
+plt.title(str(np.log10(MHI[i]))+' dex Solar Massses of HI')
+plt.xlabel('R / R1,  R1 ='+str(DHI[i]/2.)+' kpc')
+plt.ylabel('HI Mass Density [Msun pc$^{-2}$]')
+plt.xlim(0,2.)
+plt.ylim(0.1,10)
+plt.show()
+#
 plt.plot(np.log10(MHI),np.log10(HIMF))
 plt.xlim(6,11)
 plt.ylim(-6,0)
