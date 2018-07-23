@@ -58,17 +58,12 @@ def expdisk(R1,Mass,i):
     bco = np.arange(.65,.75,0.001)
     for j, R in enumerate(R1):
         Rb = bco * R
-        Rs = R * 0.20
-        out = 1.5*R
+        Rs = R * 0.18
+
+        out = 2.0*R
         ins = 0.1*R
-        #ex1 = Rs/(R-Rb)
-        #ex=(Rb/R)**2.
-        #ex2 = -(ex)*Rs/(R-Rb)
-        #a = Rb/R
-        #w = (Rs/(R-Rb))
-        #print(np.min(-a**2./w),np.max(-a**2./w))
+
         inside  = 2.*np.pi*1000.**2. *np.exp((R-Rb )/Rs) *  (Rb**2.  - ins**2.)
-        #inside  = 2.*np.pi*1000.**2. *(0.5)*(w)*(1.-np.exp(-a**2./w))
         exp     = 2.*np.pi*1000.**2. *np.exp((R-Rb )/Rs) * (Rs*(Rb+Rs ))
         edge    = 2.*np.pi*1000.**2. *np.exp((R-out)/Rs) * (Rs*(out+Rs))
 
@@ -82,39 +77,12 @@ def expdisk(R1,Mass,i):
             exp_i=exp[k]
             edge_i=edge
             MGuess_i=MGuess[k] 
-            #print(ex[k],ex2[k])
-            print('{:.3e}'.format(MGuess_i),'{:.3e}'.format(Mass[j]),'{:.3e}'.format(inside_i),'{:.3e}'.format(exp_i),'{:.3e}'.format(edge_i))
-            #print('poop',Mass[j],bco[k],MGuess_i)
 
     Rs   = (R1)*0.18
     Fluxc = np.exp((R1 - b)/Rs) 
-    #print(Fluxc,b/R1)
-    print(MGuess_i/Mass[i]*100,'%, Mass % outside '+ str(out/R)+'*R1=',edge_i/Mass[i]*100.,'%','left out mass', np.log10(edge_i), 'dex, b=',b[i]/R1[i])
+    #print('Mass='+str(round(MGuess_i/Mass[i]*100,2))+'%. Mass outside '+ str(out/R)+ '*R1= ' +str(round(edge_i/Mass[i]*100.,2)),'%.', 'b='+str(round(b[i]/R1[i],2)))
 
     return Rs, Fluxc,b
-
-def nearest_guess(find,Mass):
-    #distmin = 9E99
-    np.argmin(Mass-find)
-    #for i, valu in enumerate(Mass):
-    #    dist = abs(valu**2. - find**2.)
-    #    if dist < distmin:
-    #        distmin = dist
-    #        j = i
-    return np.array([j])
-
-def nearest(find,Mass):
-    #Mtest = 2. * np.pi * Rs**2. * Sig0 * 0.236 * 1000.**2.
-    # I need Sigma_0 and the high point ~4.5 Msun/pc^2
-    #Mtest = 2. * np.pi * Rs (Rs + b)*np.exp(b/Rs)
-    #print('Mtest',Mtest[i],'%',Mtest[i]/MHI[i])
-    distmin = 1.E15
-    for i, valu in enumerate(np.log10(Mass)):
-        dist = abs(valu**2. - find**2.)
-        if dist < distmin:
-            distmin = dist
-            j = i
-    return np.array([j])
 
 
 ####################################
@@ -123,7 +91,7 @@ i=input('Input HI Mass (dex):\n')
 print(10.**float(i))
 #i=np.where(MHI==round(10.**float(i),0))
 #i=np.where(float(i)==np.log10(MHI))
-i = nearest(float(i),MHI)
+i = np.array(np.argmin(abs(float(i)-MHI)))
 print('HI Mass:',MHI[i]*u.Msun)
 ####################################
 # Martin et al 2010 
@@ -177,7 +145,6 @@ for j, r in enumerate(radi):
         sbr[j] = 0.
     elif r < b[i]:
         sbr[j] = Sig0[i]
-        #sbr[j] = Sig0[i]*np.exp(-(r/Rs[i])**2 * (DHI[i]/2. - b[i])/Rs[i])
     else:
         sbr[j] = (Sig0[i]/np.exp(-b[i]/Rs[i])) * np.exp(-r/Rs[i])
 
