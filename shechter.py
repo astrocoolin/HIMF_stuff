@@ -63,13 +63,8 @@ def HI_profile(R1,Mass,i):
     print(str(round(MGuess_i/Mass[i],2)*100.)+'% of the mass')
     return Rs, Fluxc,b
 
-#def expdisk(slope,const,Mass):
-#    #expdisk for the polyex fit
-#    return 10.**(slope * (np.log10(Mass)-10.) + const)
-
-
 ####################################
-MHI = np.round(10.**(np.arange(4.,12.1,.1)),1)
+MHI = np.round(10.**(np.arange(6.,12.1,.1)),1)
 i=input('Input HI Mass (dex):\n')
 i=10.**float(i)
 i = np.array(np.argmin(abs(float(i)-MHI)))
@@ -106,19 +101,21 @@ print('HI Radius:','{:.4}'.format(DHI[i]*u.kpc))
 split           = 9.2832
 Mgas            = MHI * 1.4
 
-def MBar_calc(Mgas,slope,const,split):
-    #Baryonic Mass calculator
-    MBar = np.zeros_like(MHI)
+def Mstar_calc(Mgas,slope,const,split):
+    #Stellar Mass calculator
+    Mstar = np.zeros_like(MHI)
     for i, mass in enumerate(np.log10(MHI)):
         if mass < split:
-            MBar[i] = mass * 1./slope[0,0] - const[0,0]/slope[0,0]
+            Mstar[i] = mass * 1./slope[0,0] - const[0,0]/slope[0,0]
         else:
-            MBar[i] = mass * 1./slope[1,0] - const[1,0]/slope[1,0]
-    return 10.** MBar       
+            Mstar[i] = mass * 1./slope[1,0] - const[1,0]/slope[1,0]
+    return 10.** Mstar       
 
 slope = np.array([[1.052,0.058],[0.461,0.011]])
 const = np.array([[0.236,0.476],[5.329,0.112]])
-Mbar = MBar_calc(Mgas,slope,const,split) + Mgas
+Mstar = Mstar_calc(Mgas,slope,const,split)
+Mbar = Mstar + Mgas
+print('Stellar Mass:','{:.4}'.format(Mstar[i]*u.Msun))
 print('Baryonic Mass:','{:.4}'.format(Mbar[i]*u.Msun))
 ####################################
 # Lelli et al 2015
@@ -141,17 +138,28 @@ Rs, Sig0, b = HI_profile(DHI/2.,MHI,i)
 print('HI Scale length:','{:.4}'.format(Rs[i]*u.kpc))
 print('Central density:','{:.4}'.format(Sig0[i]*u.Msun/u.pc**2.))
 ####################################
-# Wu 2017
-# https://arxiv.org/abs/1710.06440
-slope = np.array([0.385,0.013])
-const = np.array([0.281,0.010])
+# Mosleh and Franx 2013
+# https://arxiv.org/abs/1302.6240
+# 'Late type'
+#alpha = np.array([0.058,0.059])
+#beta  = np.array([0.357,0.181])
+#gamma = 10.**(np.array([-0.197,0.548]))
+#M0    = 10.**(np.array([10.597,0.233]))
+# 'Sersic n < 2.5'
+alpha   = np.array([0.124,0.081])
+beta    = np.array([0.278,0.161])
+gamma   = 10.**np.array([-0.874,0.756])
+M0      = 10.**np.array([10.227,0.230])
 
-def expdisk(slope,const,Mass):
-    #expdisk for the polyex fit
-    return 10.**(slope * (np.log10(Mass)-10.) + const)
 
-Rd = expdisk(slope[0],const[0],MHI)
-print('Optical Scale length:','{:.4}'.format(Rd[i]*u.kpc))
+def expdisk(a,b,g,M0,Mass):
+    #scale length for the polyex fit
+    print(g) 
+    print((Mass)**a * (1. + Mass/M0)**(b-a))
+    return g * (Mass)**a * (1. + Mass/M0)**(b-a)
+    
+Rd = (expdisk(alpha[0],beta[0],gamma[0],M0[0],Mstar))
+print('Optical Scale length [dex]:','{:.4}'.format(Rd[i]*u.kpc))
 
 ###################################
 radi = np.arange(0.,DHI[i],0.001)
@@ -163,4 +171,9 @@ for j, r in enumerate(radi):
         sbr[j] = Sig0[i]
     else:
         sbr[j] = (Sig0[i]/np.exp(-b[i]/Rs[i])) * np.exp(-r/Rs[i])
+
+plt.plot(np.log10(MHI),np.log10(Rd),color='red')
+plt.plot(np.log10(MHI),np.log10(DHI/2.),color='blue')
+plt.show()
+
 
