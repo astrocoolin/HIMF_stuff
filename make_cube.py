@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import os
-from science import make_vrot, make_sbr, first_beam
+from science import first_beam
 from Input_output import  deffile, rotfile, emptyfits
 from pathlib import Path
 
@@ -14,7 +14,7 @@ pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
 IO= 2.45E-2
-delta = 2.5
+delta = 5.
 #########################################################
 # Distances in KPC; scale length is half the edge of
 # the disk. The galaxy is extrapolated to twice the
@@ -22,35 +22,28 @@ delta = 2.5
 # by a factor of 20 outside the edge
 #########################################################
 base_distance   = 12.8915 * MPC #Mpc
-edge_phys       = 15.0 * KPC    #kpc
-outside_phys    = edge_phys * 2.#kpc
-hr_phys         = 7.5 * KPC     #kpc
-z_phys          = 300           #pc       
 #########################################################
 # Ranges of all of the parameters to be varied
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 beam_list  = [3.,4.,5.,6.,7.]
 inc_list   = [20.,40.,60.,80.,90.]
-mags_list  = [-23.,-21.,-16.]
+mass_list  = [7.,8.,9.,10.]
 sn_list    = [16.,8.,4.]
-
-condisp    = [8.  , 15.,20. ]
 
 beam_list  = [16.]
 inc_list   = [20.]
-mags_list  = [-23.]
-condisp    = [8]
+mass_list  = [10.]
 sn_list    = [16.]
 print('beams:',beam_list)
-print('mags:',mags_list)
+print('mass:',mass_list)
 print('inc:',inc_list)
 print('sn:',sn_list)
 #########################################################
 # Main loop
 #########################################################
 for inc in inc_list:
-    for i, mag in enumerate(mags_list):
+    for i, mass in enumerate(mass_list):
         for snr in sn_list:
             for beams in beam_list:
                 #########################################################
@@ -59,35 +52,30 @@ for inc in inc_list:
                 defname ="cube_input.def"
                 inset   ='empty.fits'
                 outset  ='Cube_base.fits'
-                outname ='Cube_ba_'+str(beams)+".mag_"+str(mag)+".inc_"+\
+                outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
                     str(inc)+".SN_"+str(snr)+'.fits'
-                fname ="ba_"+str(beams)+".mag_"+str(mag)+".inc_"+\
+                fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
                     str(inc)+".SN_"+str(snr)
                 #########################################################
                 # Scaling everything in terms of arcseconds instead of
                 # in terms of kilparsecs; divide by distance
                 #########################################################
                 dist    = (16. / beams) * base_distance
-                edge    = edge_phys    / dist * 3600. * (180. / np.pi)
-                hr      = hr_phys      / dist * 3600. * (180. / np.pi)
-                outside = outside_phys / dist * 3600. * (180. / np.pi)
-                z       = z_phys       / dist * 3600. * (180. / np.pi)
+                radi,sbr,vrot,condisp,MHI,DHI,Mag = setup_relations(mass,dist,delta)
                 #########################################################
                 print('------------------')
                 print('dist [Mpc]:',        round(dist / MPC,2))
-                print('dbreak [arcsec]:',   round(edge,2))
-                print('edge [arcsec]:',     round(outside,2))
-                print('hr [arcsec]:',       round(hr,2))
-                print('condisp[km/s]:',     round(condisp[i],2))
-                print('z[arcsec]:',         round(z,2))
+                print('condisp[km/s]:',     round(condisp,2))
                 print('------------------')
                 #########################################################
                 # Set the radii, rotation curve, surface brightness
                 # profile
+                print(len(radi),min(radi),max(radi))
+                radi = radi / (dist/1000.) * 3600. * (180./np.pi)
                 #########################################################
-                radi=np.arange(0.,outside+delta,delta)
-                vrot=make_vrot(radi,mag,hr)
-                sbr=make_sbr(radi,IO,hr,edge)
+                #radi=np.arange(0.,outside+delta,delta)
+                #vrot=make_vrot(radi,mag,hr)
+                #sbr=make_sbr(radi,IO,hr,edge)
                 #########################################################
                 filecheck = Path('empty.fits')
                 if filecheck.is_file(): os.system("rm empty.fits")
@@ -102,25 +90,32 @@ for inc in inc_list:
                 # Make an input file for TiRiFiC
                 # Make an empty fits file
                 #########################################################
+
+
+
+                ##############FIX##################
+
+
                 rotfile(radi,vrot,sbr,len(radi))
                 deffile(outset,inset,defname,radi,vrot,sbr,inc,\
-                        len(radi),condisp[i],z)
+                        len(radi),condisp,0.3)
                 emptyfits(inset)
                 #########################################################
                 # Make new cube, folder for it, clear old files
                 #########################################################
-                os.system("tirific deffile="+defname)
-                print("Cube finished")
-                #########################################################
-                filecheck = Path(fname)
-                if filecheck.is_dir (): os.system("rm -r "+fname)
-                os.system("mkdir "+fname)
-                print("Refreshed folder")
-                #########################################################
-                first_beam(outset,outname,edge,beams,snr,inc,mag)
-                os.system("mv "+outname+" "+defname+" "+fname)
-                os.system("cp RC.txt "+fname)
-                os.system("rm "+outset)
-                os.system("rm empty.fits Logfile.log")
-                #########################################################
+                if (True):
+                    os.system("tirific deffile="+defname)
+                    print("Cube finished")
+                    #########################################################
+                    filecheck = Path(fname)
+                    if filecheck.is_dir (): os.system("rm -r "+fname)
+                    os.system("mkdir "+fname)
+                    print("Refreshed folder")
+                    #########################################################
+                    first_beam(outset,outname,DHI/2.,beams,snr,inc,mass)
+                    os.system("mv "+outname+" "+defname+" "+fname)
+                    os.system("cp RC.txt "+fname)
+                    os.system("rm "+outset)
+                    os.system("rm empty.fits Logfile.log")
+                    #########################################################
     os.system("rm RC.txt")

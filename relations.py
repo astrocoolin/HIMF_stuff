@@ -107,7 +107,7 @@ def expdisk(a,b,g,M0,Mass):
     return g * (Mass)**a * (1. + Mass/M0)**(b-a)
     
 
-def setup_relations(mass):
+def setup_relations(mass,dist,thicc):
     ####################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -138,8 +138,8 @@ def setup_relations(mass):
     const = np.array([[0.236,0.476],[5.329,0.112]])
     Mstar = Mstar_calc(Mgas,slope,const,split)
     Mbar = Mstar + Mgas
-    print('Stellar Mass:','{:.4}'.format(Mstar*u.Msun))
-    print('Baryonic Mass:','{:.4}'.format(Mbar*u.Msun))
+    #print('Stellar Mass:','{:.4}'.format(Mstar*u.Msun))
+    #print('Baryonic Mass:','{:.4}'.format(Mbar*u.Msun))
     ####################################
     # Lelli et al 2015
     # https://arxiv.org/abs/1512.04543
@@ -147,14 +147,14 @@ def setup_relations(mass):
     slope = np.array([3.71,0.08])
     const = np.array([2.27,0.18])
     v = BTFR(Mbar,slope,const)
-    print('Vflat:','{:.4}'.format(v*u.km/u.s))
+    #print('Vflat:','{:.4}'.format(v*u.km/u.s))
     ####################################
     # Jing et al 2014
     # https://arxiv.org/abs/1401.8164
     # HI scale length = 0.18 RHI
     Rs, Sig0, Rb = HI_profile(DHI/2.,MHI)
-    print('HI Scale length:','{:.4}'.format(Rs*u.kpc))
-    print('Central density:','{:.4}'.format(Sig0*u.Msun/u.pc**2.))
+    #print('HI Scale length:','{:.4}'.format(Rs*u.kpc))
+    #print('Central density:','{:.4}'.format(Sig0*u.Msun/u.pc**2.))
     ####################################
     # Mosleh and Franx 2013
     # https://arxiv.org/abs/1302.6240
@@ -165,7 +165,7 @@ def setup_relations(mass):
     M0      = 10.**np.array([10.227,0.230])
     
     Rd = (expdisk(alpha[0],beta[0],gamma[0],M0[0],Mstar))
-    print('Optical Scale length:','{:.4}'.format(Rd*u.kpc))
+    #print('Optical Scale length:','{:.4}'.format(Rd*u.kpc))
     ###################################
     # Approximate stuff
     # This is from Papastergis & Shankar 2012
@@ -178,14 +178,29 @@ def setup_relations(mass):
     # for most massive, to 20km/s for least
     # massive
     Vdisp = np.round(38.142 - 2.857*np.log10(MHI),2)
-    print('Vdisp=',Vdisp*u.km/u.s)
+    #print('Vdisp=',Vdisp*u.km/u.s)
     ###################################
     # Calculating Magnitude from vmax
     # https://arxiv.org/abs0512051
     Mag, vRmax = Magcalc(v,Rd,Rmax)
-    print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
-    print('B-Band Magnitude:','{:.4}'.format(Mag))
-    radi = np.arange(0.,DHI,0.001)
+    #print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
+    #print('B-Band Magnitude:','{:.4}'.format(Mag))
+
+    dist = dist * u.pc
+    print('distance [kpc]', dist.to_value(u.kpc))
+    delta = ((thicc*u.arcsec).to_value(u.rad)*(dist.to_value(u.kpc)))* u.kpc
+    print('ringsize',delta)
+    print('rings',DHI*u.kpc /delta)
+    radi = np.arange(0.,DHI,delta/u.kpc)
+
+
+
+
+    #print('DHI',round(DHI/2.,2),'in radians',round((DHI*(1000.)/dist),2),'in arcsec',round((DHI*(1000.)/dist)*(180./np.pi)*3600.,2))
+    #print('radi:',radi,delta)
+
 
     vrot = make_vrot(radi,Mag,Rd)
     sbr = make_sbr(radi,Sig0,Rs,Rb,DHI)
+
+    return radi, sbr, vrot, Vdisp, MHI, DHI, Mag

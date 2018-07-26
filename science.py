@@ -7,7 +7,7 @@ from decimal import Decimal
 import random 
 import os
 
-def first_beam(outset,outname,rmax,ba,sn,inc,Mag):
+def first_beam(outset,outname,rmax,ba,sn,inc,Mass):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
@@ -56,7 +56,7 @@ def first_beam(outset,outname,rmax,ba,sn,inc,Mag):
     prihdr['COMMENT'] = 'SN:'+str(sn)
     prihdr['COMMENT'] = 'Beams Across: '+str(ba)
     prihdr['COMMENT'] = 'Inclination:  '+str(inc)
-    prihdr['COMMENT'] = 'Magnitude: '+str(Mag)
+    prihdr['COMMENT'] = 'Mass: '+str(mass)
 
     hdu = fits.PrimaryHDU(cube,header=prihdr)
     hlist = fits.HDUList([hdu])
