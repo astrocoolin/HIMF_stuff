@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+from scipy.optimize import curve_fit
 
 def func(x,a,b,c,d):
     #exponential fit for V0, rPE
@@ -30,6 +31,23 @@ def make_vrot(radi,Mag,hr):
     print('a:',round(a,2))
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
+
+def Magcalc(vrot,hr,Rmax):
+    A=np.array([0.007,0.006,0.005,0.012,0.021,0.028,0.028,0.033,0.042,0.087])
+    V0 = np.array([270.,248.,221.,188.,161.,143.,131.,116.,97.,64.])
+    rPE = np.array([0.37,0.40,0.48,0.48,0.52,0.64,0.73,0.81,0.80,0.72])
+    m=np.array([-23.8,-23.4,-23.,-22.6,-22.2,-21.8,-21.4,-21.,-20.4,-19])
+    V0, foo = curve_fit(func, m, V0)
+    rPE,foo = curve_fit(func, m, rPE)
+    A, foo  = curve_fit(func2, m, A)
+    Mag = np.arange(-24.,0.,0.1)
+    vt=func(Mag,*V0)
+    Mag = round(Mag[np.argmin(abs(vt-vrot))],2)
+    rt=hr*func(Mag,*rPE)
+    a=func2(Mag,*A)
+    vt=func(Mag,*V0)
+    vRmax = np.max(vt*(1.-np.exp(-Rmax/rt))*(1.+a*Rmax/rt))
+    return Mag, vRmax
 
 def HI_profile(R1,Mass,i):
     #Have to find Sigma_centre
@@ -64,7 +82,7 @@ def HI_profile(R1,Mass,i):
     return Rs, Fluxc,b
 
 ####################################
-MHI = np.round(10.**(np.arange(6.,12.1,.1)),1)
+MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
 i=input('Input HI Mass (dex):\n')
 i=10.**float(i)
 i = np.array(np.argmin(abs(float(i)-MHI)))
@@ -94,7 +112,7 @@ def DHI(MHI, slope,intercept):
     return (10.**(slope*np.log10(MHI)+intercept))
 
 DHI = DHI(MHI,slope, const)
-print('HI Radius:','{:.4}'.format(DHI[i]*u.kpc))
+print('HI Radius:','{:.4}'.format(DHI[i]/2.*u.kpc))
 ####################################
 # Bradford et al 2015, right after eq 4
 # https://arxiv.org/abs/1505.04819
@@ -133,18 +151,13 @@ print('Vflat:','{:.4}'.format(v[i]*u.km/u.s))
 ####################################
 # Jing et al 2014
 # https://arxiv.org/abs/1401.8164
-# scale length = 0.18 RHI
+# HI scale length = 0.18 RHI
 Rs, Sig0, b = HI_profile(DHI/2.,MHI,i)
 print('HI Scale length:','{:.4}'.format(Rs[i]*u.kpc))
 print('Central density:','{:.4}'.format(Sig0[i]*u.Msun/u.pc**2.))
 ####################################
 # Mosleh and Franx 2013
 # https://arxiv.org/abs/1302.6240
-# 'Late type'
-#alpha = np.array([0.058,0.059])
-#beta  = np.array([0.357,0.181])
-#gamma = 10.**(np.array([-0.197,0.548]))
-#M0    = 10.**(np.array([10.597,0.233]))
 # 'Sersic n < 2.5'
 alpha   = np.array([0.124,0.081])
 beta    = np.array([0.278,0.161])
@@ -154,14 +167,32 @@ M0      = 10.**np.array([10.227,0.230])
 
 def expdisk(a,b,g,M0,Mass):
     #scale length for the polyex fit
-    print(g) 
-    print((Mass)**a * (1. + Mass/M0)**(b-a))
     return g * (Mass)**a * (1. + Mass/M0)**(b-a)
     
 Rd = (expdisk(alpha[0],beta[0],gamma[0],M0[0],Mstar))
-print('Optical Scale length [dex]:','{:.4}'.format(Rd[i]*u.kpc))
-
+print('Optical Scale length:','{:.4}'.format(Rd[i]*u.kpc))
 ###################################
+# Approximate stuff
+# This is from Papastergis & Shankar 2012
+# Based on where the Vmax,HI is measured.
+# Smaller galaxies have Rmax at a higher
+# fraction of DHI than more massive galaxies
+Rmax = (DHI[i]/2.) / (np.log10(MHI[i]) -5.)
+print('RMAX=',Rmax)
+###################################
+# Velocity dispersion to range from 8km/s
+# for most massive, to 20km/s for least
+# massive
+Vdisp = np.round(38.142 - 2.857*np.log10(MHI),2)
+print('Vdisp=',Vdisp[i]*u.km/u.s)
+###################################
+# Calculating Magnitude from vmax
+Mag, vRmax = Magcalc(v[i],Rd[i],Rmax)
+print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
+print('B-Band Magnitude:','{:.4}'.format(Mag))
+
+
+
 radi = np.arange(0.,DHI[i],0.001)
 sbr = np.zeros_like(radi)
 for j, r in enumerate(radi):
@@ -171,9 +202,4 @@ for j, r in enumerate(radi):
         sbr[j] = Sig0[i]
     else:
         sbr[j] = (Sig0[i]/np.exp(-b[i]/Rs[i])) * np.exp(-r/Rs[i])
-
-plt.plot(np.log10(MHI),np.log10(Rd),color='red')
-plt.plot(np.log10(MHI),np.log10(DHI/2.),color='blue')
-plt.show()
-
 
