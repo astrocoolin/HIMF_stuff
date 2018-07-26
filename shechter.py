@@ -187,6 +187,7 @@ Vdisp = np.round(38.142 - 2.857*np.log10(MHI),2)
 print('Vdisp=',Vdisp[i]*u.km/u.s)
 ###################################
 # Calculating Magnitude from vmax
+# https://arxiv.org/abs0512051
 Mag, vRmax = Magcalc(v[i],Rd[i],Rmax)
 print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
 print('B-Band Magnitude:','{:.4}'.format(Mag))
