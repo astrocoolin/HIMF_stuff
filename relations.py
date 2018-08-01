@@ -32,16 +32,19 @@ def make_vrot(radi,Mag,hr):
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
 
-def make_sbr(radi,Sig0,Rs,Rb,DHI):
+def make_sbr(radi,Sig0,Rs,Rb,DHI,vt,mass):
     sbr = np.zeros_like(radi)
     for j, r in enumerate(radi):
-        if r < 0.1*DHI/2.:
-            sbr[j] = 0.
-        elif r < Rb:
+        #if r < 0.1*DHI/2.:
+        #    sbr[j] = 0.
+        if r < Rb:
             sbr[j] = Sig0
         else:
             sbr[j] = (Sig0/np.exp(-Rb/Rs)) * np.exp(-r/Rs)
     return sbr
+
+def make_z(radi,vrot,sigma):
+    return sigma / ( np.sqrt(2./3.) * vrot/radi)
     
 
 def Magcalc(vrot,hr,Rmax):
@@ -59,26 +62,7 @@ def Magcalc(vrot,hr,Rmax):
     a=func2(Mag,*A)
     vt=func(Mag,*V0)
     vRmax = np.max(vt*(1.-np.exp(-Rmax/rt))*(1.+a*Rmax/rt))
-    return Mag, vRmax
-
-def HI_profile(R1,Mass):
-    #Have to find Sigma_centre
-    #Integrated Flux should give you the mass of the galaxy
-    Rb = 0.75 * R1
-    Rs = R1 * 0.18
-
-    out = 2.0*R1
-    ins = 0.1*R1
-
-    inside  = 2.*np.pi*1000.**2. *np.exp((R1-Rb )/Rs) *  (Rb**2.  - ins**2.)
-    exp     = 2.*np.pi*1000.**2. *np.exp((R1-Rb )/Rs) * (Rs*(Rb+Rs ))
-    edge    = 2.*np.pi*1000.**2. *np.exp((R1-out)/Rs) * (Rs*(out+Rs))
-
-    MGuess =  (inside + exp - edge)
-
-    Fluxc = np.exp((R1 - Rb)/Rs) 
-    print(str(round(MGuess/Mass,2)*100.)+'% of the mass')
-    return Rs, Fluxc, Rb
+    return Mag, vRmax, vt
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -177,12 +161,12 @@ def setup_relations(mass,dist,thicc):
     # Velocity dispersion to range from 8km/s
     # for most massive, to 20km/s for least
     # massive
-    Vdisp = np.round(38.142 - 2.857*np.log10(MHI),2)
+    Vdisp = np.round(17.714 - 0.952*np.log10(MHI),2)
     #print('Vdisp=',Vdisp*u.km/u.s)
     ###################################
     # Calculating Magnitude from vmax
     # https://arxiv.org/abs0512051
-    Mag, vRmax = Magcalc(v,Rd,Rmax)
+    Mag, vRmax, vt = Magcalc(v,Rd,Rmax)
     #print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
     #print('B-Band Magnitude:','{:.4}'.format(Mag))
 
@@ -193,14 +177,11 @@ def setup_relations(mass,dist,thicc):
     print('rings',DHI*u.kpc /delta)
     radi = np.arange(0.,DHI,delta/u.kpc)
 
-
-
-
-    #print('DHI',round(DHI/2.,2),'in radians',round((DHI*(1000.)/dist),2),'in arcsec',round((DHI*(1000.)/dist)*(180./np.pi)*3600.,2))
-    #print('radi:',radi,delta)
-
-
     vrot = make_vrot(radi,Mag,Rd)
-    sbr = make_sbr(radi,Sig0,Rs,Rb,DHI)
+    sbr  = make_sbr(radi,Sig0,Rs,Rb,DHI,vt,mass)
+    z    = make_z(radi,vrot,Vdisp)
 
-    return radi, sbr, vrot, Vdisp, MHI, DHI, Mag
+    plt.semilogy(radi,sbr)
+    plt.show()
+
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag
