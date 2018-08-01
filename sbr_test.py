@@ -8,10 +8,14 @@ from scipy import integrate
 def func(x,a,b,c,d):
     #exponential fit for V0, rPE
     return a*np.exp(-x*b+c) +d
+    #return a*x + b
+
 
 def func2(x,a,b,c,d):
     #quadratic fit for A
-    return d*x**3. + a*x**2. + b*x + c
+    #return a*x + b
+    #return a*np.exp(-x*b+c) +d
+    return a*x**2. + b*x + c + d*x**3.
 
 def make_vrot(radi,Mag,hr):
     A=np.array([0.007,0.006,0.005,0.012,0.021,0.028,0.028,0.033,0.042,0.087])
@@ -25,71 +29,74 @@ def make_vrot(radi,Mag,hr):
 
     vt=func(Mag,*V0)
     rt=hr*func(Mag,*rPE)
-    a=0#func2(Mag,*A)
+    a=0.#func2(Mag,*A)
 
-    print('vt[km/s]:',round(vt,2))
-    print('rt[arcsec]:',round(rt,2))
-    print('a:',round(a,2))
+    #print('vt[km/s]:',round(vt,2))
+    #print('rt[arcsec]:',round(rt,2))
+    #print('a:',round(a,2))
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
 
-def sbr_calc(radi,RHI,x,dx,vt,Rs):
+
+def make_sbr_old(radi,Sig0,Rs,Rb,DHI):
     sbr = np.zeros_like(radi)
     for j, r in enumerate(radi):
-        sig1 = np.exp(-((r-0.4*RHI)/(np.sqrt(2)*(x+dx)*RHI))**2.)
-        sig2 = (np.sqrt(vt/120.)-1.)*np.exp(-r/Rs)
-        sbr[j] = sig1-sig2
-    R_HI= np.argmin(abs(radi**2. - RHI**2.))
-    sbr = sbr/sbr[R_HI]
+        #if r < 0.1*DHI/2.:
+        #    sbr[j] = 0.
+        if r < Rb:
+            sbr[j] = Sig0
+        else:
+            sbr[j] = (Sig0/np.exp(-Rb/Rs)) * np.exp(-r/Rs)
     return sbr
-
-
-def make_sbr(radi,Rs,DHI,vt,mass):
-    RHI=DHI/2.
-    x=0.36
-    delta = np.arange(-0.045,-0.03,0.001)
-    Mass_guess = np.zeros_like(delta)
-
-    for i, dx in enumerate(delta):
-        sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
-        Mass_guess[i] = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
-
-    Mj = np.argmin(abs(Mass_guess**2.- mass**2.))
-    dx = delta[Mj]
-
-    sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
-    Mass_guess = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
-    #print('Mass %:',100*Mass_guess/mass)
-    
-    return sbr
-
 
 
 def make_z(radi,vrot,sigma):
-    z = np.zeros_like(radi)
-    for i, r in enumerate(radi):
-        if i != 0:
-            z[i] = sigma / ( np.sqrt(2./3.) * vrot[i]/r)
-        if i == 0:
-            z[i] = sigma / ( np.sqrt(2./3.) * vrot[1]/radi[1])
-    return  z
+    return sigma / ( np.sqrt(2./3.) * vrot/radi)
+    
 
 def Magcalc(vrot,hr,Rmax):
     A=np.array([0.007,0.006,0.005,0.012,0.021,0.028,0.028,0.033,0.042,0.087])
     V0 = np.array([270.,248.,221.,188.,161.,143.,131.,116.,97.,64.])
     rPE = np.array([0.37,0.40,0.48,0.48,0.52,0.64,0.73,0.81,0.80,0.72])
     m=np.array([-23.8,-23.4,-23.,-22.6,-22.2,-21.8,-21.4,-21.,-20.4,-19])
+    
+   # plt.scatter(m,A)
+
     V0, foo = curve_fit(func, m, V0)
     rPE,foo = curve_fit(func, m, rPE)
     A, foo  = curve_fit(func2, m, A)
-    Mag = np.arange(-24.,0.,0.1)
+    Mag = np.arange(-30.,0.,0.1)
     vt=func(Mag,*V0)
     Mag = round(Mag[np.argmin(abs(vt-vrot))],2)
     rt=hr*func(Mag,*rPE)
     a=func2(Mag,*A)
+    
+    #mee = np.arange(-30,0,0.5)
+    #plt.plot(mee,func2(mee,*A))
+    #plt.show()
+
     vt=func(Mag,*V0)
     vRmax = np.max(vt*(1.-np.exp(-Rmax/rt))*(1.+a*Rmax/rt))
     return Mag, vRmax, vt
+
+def HI_profile(R1,Mass):
+    #Have to find Sigma_centre
+    #Integrated Flux should give you the mass of the galaxy
+    Rb = 0.75 * R1
+    Rs = R1 * 0.18
+
+    out = 2.0*R1
+    ins = 0.1*R1
+
+    inside  = 2.*np.pi*1000.**2. *np.exp((R1-Rb )/Rs) *  (Rb**2.  - ins**2.)
+    exp     = 2.*np.pi*1000.**2. *np.exp((R1-Rb )/Rs) * (Rs*(Rb+Rs ))
+    edge    = 2.*np.pi*1000.**2. *np.exp((R1-out)/Rs) * (Rs*(out+Rs))
+
+    MGuess =  (inside + exp - edge)
+    #print('inside,exp',inside/MGuess,(exp+edge)/MGuess)
+    Fluxc = np.exp((R1 - Rb)/Rs) 
+    #print(str(round(MGuess/Mass,2)*100.)+'% of the mass')
+    return Rs, Fluxc, Rb
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -116,11 +123,14 @@ def BTFR(Mbar,slope,const):
 def expdisk(a,b,g,M0,Mass):
     #scale length for the polyex fit
     return g * (Mass)**a * (1. + Mass/M0)**(b-a)
-    
 
-def setup_relations(mass,dist,thicc):
+for mass in (5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5):
+#for mass in (7.5,):
+    #mass=10.0
+    dist = 12.E6
+    thicc=0.05
     ####################################
-    MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
+    MHI = np.round(10.**(np.arange(5.5,11.1,.1)),1)
     mass=10.**float(mass)
     i = np.array(np.argmin(abs(float(mass)-MHI)))
     MHI = MHI[i]
@@ -155,10 +165,8 @@ def setup_relations(mass,dist,thicc):
     # Lelli et al 2015
     # https://arxiv.org/abs/1512.04543
     
-    #slope = np.array([3.71,0.08])
-    #const = np.array([2.27,0.18])
-    slope = np.array([3.95,0.34])
-    const = np.array([1.85,0.60])
+    slope = np.array([3.71,0.08])
+    const = np.array([2.27,0.18])
     v = BTFR(Mbar,slope,const)
     #print('Vflat:','{:.4}'.format(v*u.km/u.s))
     ####################################
@@ -194,28 +202,63 @@ def setup_relations(mass,dist,thicc):
     #print('Vdisp=',Vdisp*u.km/u.s)
     ###################################
     # Calculating Magnitude from vmax
-    # https://arxiv.org/abs/astro-ph/0512051
+    # https://arxiv.org/abs0512051
     Mag, vRmax, vt = Magcalc(v,Rd,Rmax)
     #print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
     #print('B-Band Magnitude:','{:.4}'.format(Mag))
-
+    
     dist = dist * u.pc
-    dist = dist.to_value(u.kpc)
-    print('distance [kpc]', round(dist,2))
-    delta = ((thicc*u.arcsec).to_value(u.rad)*(dist))* u.kpc
-    print('ringsize',delta)
-    print('rings',DHI*u.kpc /delta)
+    #print('distance [kpc]', dist.to_value(u.kpc))
+    delta = ((thicc*u.arcsec).to_value(u.rad)*(dist.to_value(u.kpc)))* u.kpc
+    #print('ringsize',delta)
+    #print('rings',DHI*u.kpc /delta)
+    print('vt=',vt,'DHI=',DHI,'Mass=',np.log10(mass))
+    print('Mag=',Mag)
     radi = np.arange(0.,DHI,delta/u.kpc)
-
+    
     vrot = make_vrot(radi,Mag,Rd)
-    sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,vt,mass)
-    print(np.max(sbr))
+    
+    def make_sbr(radi,Rs,DHI,vt,mass):
+        RHI=DHI/2.
+        x=0.36
+        delta = np.arange(-0.045,-0.03,0.001)
+        Mass = np.zeros_like(delta)
+        for i, dx in enumerate(delta):
+            sbr = np.zeros_like(radi)
+            for j, r in enumerate(radi):
+                sig1 = np.exp(-((r-0.4*RHI)/(np.sqrt(2)*(x+dx)*RHI))**2.)
+                sig2 = (np.sqrt(vt/120.)-1.)*np.exp(-r/Rs)
+                sbr[j] = sig1-sig2
+            R_HI= np.argmin(abs(radi**2. - RHI**2.))
+            sbr = sbr/sbr[R_HI]
+            Mass[i] = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
+        Mj = np.argmin(abs(Mass**2.- mass**2.))
+        dx = delta[Mj]
+        for j, r in enumerate(radi):
+            sig1 = np.exp(-((r-0.4*RHI)/(np.sqrt(2)*(x+dx)*RHI))**2.)
+            sig2 = (np.sqrt(vt/120.)-1.)*np.exp(-r/Rs)
+            sbr[j] = sig1-sig2
+        R_HI= np.argmin(abs(radi**2. - RHI**2.))
+        sbr = sbr/sbr[R_HI]
+
+        return sbr
+    
+    sbr  = make_sbr(radi,Rs,DHI,vt,mass)
     z    = make_z(radi,vrot,Vdisp)
+    plt.figure(1)
+    plt.semilogy(radi/(DHI/2.),sbr,label=np.log10(mass))
+    plt.axhline(1)
+    plt.axvline(1)
+    plt.figure(2)
+    plt.plot(radi,vrot,label=np.log10(mass))
 
-    #plt.semilogy(radi,sbr)
-    #plt.show()
-    #plt.plot(radi,vrot)
-    #plt.axvline(DHI/2.)
-    #plt.show()
+plt.figure(1)
+plt.xlabel('R/R$_{HI}$')
+plt.ylabel('$\Sigma$ [Msun / pc^2]')
+plt.legend()
+plt.figure(2)
+plt.xlabel('Radi [kpc]')
+plt.ylabel('Vrot [km/s]')
+plt.legend()
+plt.show()
 
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag

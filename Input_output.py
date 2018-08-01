@@ -40,6 +40,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     sbr  =  sbr[0:END]
     vrot = vrot[0:END]
     radi = radi[0:END]
+    z    =    z[0:END]
     vrot_str=vrot_str[0:END]
     
     file.write("\n\nRADI=")
@@ -55,14 +56,17 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     for i in range(1,len(vrot_str)):
         file.write(' +')
         file.write('%E' % Decimal(sbr[i]))
-    file.write("\n\nZ0="+str(float(z)))
+    file.write("\n\nZ=")
+    for i in range(0,len(vrot_str)):
+        file.write(' +')
+        file.write('%E' % Decimal(z[i]))
     file.write("\nINCL= +6.00000E+01")
     file.write("\nPA= +4.50000E+01")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
     file.write("\nVSYS= +1403.93164636")
-    file.write("\nSDIS=0")
-    file.write("\nCONDISP="+str(float(condisp)))
+    file.write("\nSDIS="+str(float(condisp)))
+    file.write("\nCONDISP=0")
     file.write("\nLTYPE= 3")
     file.write("\n")
     file.write("\nCFLUX=2E-5") 
@@ -89,8 +93,10 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nPSFI=")
     file.write("\nPSID=")
     file.write("\nPSDD=")
-    
-    file.write("\n\nVARY= INCL 1:5, !INCL 6:8,  PA 1:5 , !PA 6:8, !VROT 2:8, !SBR 2:8,  Z0 1:8")
+    if END > 6: 
+        file.write("\n\nVARY= INCL 1:5, !INCL 6:8,  PA 1:5 , !PA 6:, !VROT 2:8, !SBR 2:8,  Z0 1:8")
+    else:
+        file.write("\n\nVARY= INCL 1:5, !INCL 6:"+str(END)+",  PA 1:5 , !PA 6:"+str(END)+", !VROT 2:"+str(END)+", !SBR 2:"+str(END)+",  Z0 1:"+str(END)+"")
     file.write("\nVARINDX=")
     file.write("\nPARMAX=   90  90  360  360  500    1  30")
     file.write("\nPARMIN=    0   0 -360 -360   20    0   0")

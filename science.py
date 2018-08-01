@@ -7,7 +7,7 @@ from decimal import Decimal
 import random 
 import os
 
-def first_beam(outset,outname,rmax,ba,sn,inc,Mass):
+def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel

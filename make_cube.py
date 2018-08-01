@@ -13,7 +13,7 @@ from relations import *
 pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
-IO= 2.45E-2
+#IO= 2.45E-3
 delta = 5.
 #########################################################
 # Distances in KPC; scale length is half the edge of
@@ -21,19 +21,20 @@ delta = 5.
 # edge of the disk with the scale length decreased 
 # by a factor of 20 outside the edge
 #########################################################
-base_distance   = 12.8915 * MPC #Mpc
+base_distance   = 12.8915/16. * MPC #Mpc
 #########################################################
 # Ranges of all of the parameters to be varied
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 beam_list  = [3.,4.,5.,6.,7.]
 inc_list   = [20.,40.,60.,80.,90.]
-mass_list  = [7.,8.,9.,10.]
+mass_list  = [7.,8.,9.]#,10.]
 sn_list    = [16.,8.,4.]
 
 beam_list  = [16.]
 inc_list   = [20.]
-mass_list  = [10.]
+#mass_list  = [9.]
+mass_list  = [7.]#,10.]
 sn_list    = [16.]
 print('beams:',beam_list)
 print('mass:',mass_list)
@@ -61,16 +62,17 @@ for inc in inc_list:
                 # in terms of kilparsecs; divide by distance
                 #########################################################
                 dist    = (16. / beams) * base_distance
-                radi,sbr,vrot,condisp,MHI,DHI,Mag = setup_relations(mass,dist,delta)
+                radi,sbr,vrot,condisp,z,MHI,DHI,Mag = setup_relations(mass,dist,delta)
+                #sbr = sbr * 0.5E-2
                 #########################################################
                 print('------------------')
                 print('dist [Mpc]:',        round(dist / MPC,2))
-                print('condisp[km/s]:',     round(condisp,2))
+                print('sdisp[km/s]:',     round(condisp,2))
                 print('------------------')
                 #########################################################
                 # Set the radii, rotation curve, surface brightness
                 # profile
-                print(len(radi),min(radi),max(radi))
+                #print(len(radi),min(radi),max(radi))
                 radi = radi / (dist/1000.) * 3600. * (180./np.pi)
                 #########################################################
                 #radi=np.arange(0.,outside+delta,delta)
@@ -90,15 +92,9 @@ for inc in inc_list:
                 # Make an input file for TiRiFiC
                 # Make an empty fits file
                 #########################################################
-
-
-
-                ##############FIX##################
-
-
                 rotfile(radi,vrot,sbr,len(radi))
                 deffile(outset,inset,defname,radi,vrot,sbr,inc,\
-                        len(radi),condisp,0.3)
+                        len(radi),condisp,z)
                 emptyfits(inset)
                 #########################################################
                 # Make new cube, folder for it, clear old files
