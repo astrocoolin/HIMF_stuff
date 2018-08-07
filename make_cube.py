@@ -13,7 +13,6 @@ from relations import *
 pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
-#IO= 2.45E-3
 delta = 5.
 #########################################################
 # Distances in KPC; scale length is half the edge of
@@ -61,8 +60,9 @@ for inc in inc_list:
                 # Scaling everything in terms of arcseconds instead of
                 # in terms of kilparsecs; divide by distance
                 #########################################################
-                dist    = (16. / beams) * base_distance
-                radi,sbr,vrot,condisp,z,MHI,DHI,Mag = setup_relations(mass,dist,delta)
+                dist    =  beams
+                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist = \
+                        setup_relations(mass,beams,delta)
                 #sbr = sbr * 0.5E-2
                 #########################################################
                 print('------------------')

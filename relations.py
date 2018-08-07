@@ -118,7 +118,7 @@ def expdisk(a,b,g,M0,Mass):
     return g * (Mass)**a * (1. + Mass/M0)**(b-a)
     
 
-def setup_relations(mass,dist,thicc):
+def setup_relations(mass,beams,thicc):
     ####################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -199,7 +199,9 @@ def setup_relations(mass,dist,thicc):
     #print("Approx measured V:",round(vRmax,2)*u.km/u.s,', @ R=',round(Rmax,2)*u.kpc)
     #print('B-Band Magnitude:','{:.4}'.format(Mag))
 
-    dist = dist * u.pc
+    dist = DHI / (beams * (np.pi/162000.))
+
+    dist = dist * u.kpc
     dist = dist.to_value(u.kpc)
     print('distance [kpc]', round(dist,2))
     delta = ((thicc*u.arcsec).to_value(u.rad)*(dist))* u.kpc
@@ -218,4 +220,4 @@ def setup_relations(mass,dist,thicc):
     #plt.axvline(DHI/2.)
     #plt.show()
 
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist

@@ -159,14 +159,15 @@ for mass in (5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5):
     const = np.array([[0.236,0.476],[5.329,0.112]])
     Mstar = Mstar_calc(Mgas,slope,const,split)
     Mbar = Mstar + Mgas
-    #print('Stellar Mass:','{:.4}'.format(Mstar*u.Msun))
-    #print('Baryonic Mass:','{:.4}'.format(Mbar*u.Msun))
+    print('Stellar Mass:','{:.4}'.format(Mstar*u.Msun))
+    print('Baryonic Mass:','{:.4}'.format(Mbar*u.Msun))
     ####################################
     # Lelli et al 2015
     # https://arxiv.org/abs/1512.04543
-    
-    slope = np.array([3.71,0.08])
-    const = np.array([2.27,0.18])
+    #slope = np.array([3.71,0.08])
+    #const = np.array([2.27,0.18])
+    slope = np.array([3.95,0.34])
+    const = np.array([1.85,0.60]) 
     v = BTFR(Mbar,slope,const)
     #print('Vflat:','{:.4}'.format(v*u.km/u.s))
     ####################################
