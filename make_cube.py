@@ -15,25 +15,19 @@ KPC =1.0E3
 MPC =1.0E6
 delta = 5.
 #########################################################
-# Distances in KPC; scale length is half the edge of
-# the disk. The galaxy is extrapolated to twice the
-# edge of the disk with the scale length decreased 
-# by a factor of 20 outside the edge
-#########################################################
-base_distance   = 12.8915/16. * MPC #Mpc
-#########################################################
 # Ranges of all of the parameters to be varied
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 beam_list  = [3.,4.,5.,6.,7.]
 inc_list   = [20.,40.,60.,80.,90.]
-mass_list  = [7.,8.,9.]#,10.]
+mass_list  = [7.,8.,9.]
 sn_list    = [16.,8.,4.]
 
 beam_list  = [16.]
 inc_list   = [20.]
-mass_list  = [10.3]
+mass_list  = [9.]
 sn_list    = [2.]
+
 print('beams:',beam_list)
 print('mass:',mass_list)
 print('inc:',inc_list)
@@ -114,7 +108,7 @@ for inc in inc_list:
                     os.system("rm "+outset)
                     os.system("rm empty.fits Logfile.log")
                 #########################################################
-                os.system("mv "+defname+" "+fname)
+                os.system("mv "+defname+" VROT.png SBR.png "+fname)
                 os.system("cp RC.dat "+fname)
                 #########################################################
     os.system("rm RC.dat")

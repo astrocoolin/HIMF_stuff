@@ -33,26 +33,13 @@ def make_vrot(radi,Mag,hr,v):
     rPE,foo = curve_fit(func2, m, rPE,sigma=drPE)
     A, foo  = curve_fit(func2, m, A,sigma=dA)
 
-    #Mag = np.arange(-24,10.,0.1)
-
     vt=func(Mag,*V0)
     rt=hr*func2(Mag,*rPE)
     a=np.max([0.,func2(Mag,*A)])
 
-    #plt.figure(1)
-    #plt.plot(Mag,vt)
-    #plt.scatter(m,V0)
-    #plt.figure(2)
-    #plt.plot(Mag,rt)
-    #plt.scatter(m,hr*rPE)
-    #plt.figure(3)
-    #plt.scatter(m,A)
-    #plt.plot(Mag,a)
-    #plt.show()
-
-    print('vt[km/s]:',round(vt,2))
-    print('rt[arcsec]:',round(rt,2))
-    print('a:',round(a,2))
+    #print('vt[km/s]:',round(vt,2))
+    #print('rt[arcsec]:',round(rt,2))
+    #print('a:',round(a,2))
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
 
@@ -118,30 +105,51 @@ def Magcalc(vrot,hr,Rmax):
     vRmax = np.max(vt*(1.-np.exp(-Rmax/rt))*(1.+a*Rmax/rt))
     return Mag
 
+def err(errbar):
+    return errbar*(np.random.random()*2. - 1.)
+
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
     return np.log(10.) *phi_0* (MHI/Mstar)**(alpha+1.) * np.exp(-MHI/Mstar)
 
-def DHI_calc(MHI, slope,intercept):
+def DHI_calc(MHI, slope,const):
     #Diameter-Mass relation
-    return (10.**(slope*np.log10(MHI)+intercept))
+    slope = slope[0] + err(slope[1])
+    const = const[0] + err(const[1])
+    return 10.**(slope*np.log10(MHI)+const)
 
-def Mstar_calc(Mgas,slope,const,split):
+def Mstar_calc(Mgas,slope,const,split,scatr):
     #Stellar Mass calculator
     mass = np.log10(Mgas)
     if mass < split:
-        Mstar = mass * 1./slope[0,0] - const[0,0]/slope[0,0]
+        slope = slope[0,0] + err(slope[0,1])
+        const = const[0,0] + err(const[0,1])+err(scatr[0,0]+err(scatr[0,1]))
     else:
-        Mstar = mass * 1./slope[1,0] - const[1,0]/slope[1,0]
+        slope = slope[1,0] + err(slope[1,1])    
+        const = const[1,0] + err(const[1,1])+err(scatr[1,0]+err(scatr[1,1]))
+
+    Mstar = mass * 1./slope - const/slope
     return 10.** Mstar       
 
 def BTFR(Mbar,slope,const):
     #Baryonic Tully Fisher
-    logv = np.log10(Mbar) * 1./slope[0] - const[0]/slope[0]
+    slope = slope[0] + err(slope[1])
+    const = const[0] + err(const[1])
+    logv = np.log10(Mbar) * 1./slope - const/slope
+    return 10.**(logv)
+
+def BTFR_2(Mbar,slope,const,scatr):
+    #Baryonic Tully Fisher
+    slope = slope[0] + err(slope[1])
+    const = const[0] + err(const[1])+err(scatr[0]+err(scatr[1]))
+    logv = np.log10(Mbar) * slope + const
     return 10.**(logv)
 
 def TFR(slope,const,vflat):
-    Mag = slope[0] * (np.log10(vflat) -2.3)+const[0]
+    # Tully Fisher
+    slope = slope[0] + err(slope[1])
+    const = const[0] + err(const[1])
+    Mag = slope * (np.log10(vflat) -2.3)+const
     return Mag
 
 def expdisk(a,b,g,M0,Mass):
@@ -166,11 +174,12 @@ def setup_relations(mass,beams,thicc):
     ####################################
     # Jing Wang, Koribalski, et al 2016
     # https://arxiv.org/abs/1605.01489
-    slope       =   0.506
-    const       =  -3.293
+    slope = np.array([0.506,0.003])
+    const = np.array([-3.293,0.009])
+    scatter = 0.06 #dex
     
     DHI = DHI_calc(MHI,slope, const)
-    print('HI Radius:','{:.4}'.format(DHI/2.*u.kpc))
+    #print('HI Radius:','{:.4}'.format(DHI/2.*u.kpc))
     ####################################
     # Bradford et al 2015, right after eq 4
     # https://arxiv.org/abs/1505.04819
@@ -178,21 +187,21 @@ def setup_relations(mass,beams,thicc):
     Mgas            = MHI * 1.4
     slope = np.array([[1.052,0.058],[0.461,0.011]])
     const = np.array([[0.236,0.476],[5.329,0.112]])
-    Mstar = Mstar_calc(Mgas,slope,const,split)
+    scatr = np.array([[0.285,0.019],[0.221,0.006]])
+    Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
     ####################################
     # Lelli et al 2015
     # https://arxiv.org/abs/1512.04543
-    #slope = np.array([3.71,0.08])
-    #const = np.array([2.27,0.18])
-    slope = np.array([3.95,0.34])
-    const = np.array([1.85,0.60])
+    slope = np.array([3.71,0.08])
+    const = np.array([2.27,0.18])
     v_flat = BTFR(Mbar,slope,const)
-    print('Vflat:','{:.4}'.format(v_flat*u.km/u.s))
+    #print('Vflat:','{:.4}'.format(v_flat*u.km/u.s))
     slope = np.array([0.277,0.004])
     const = np.array([-0.672,0.041])
-    v_test = np.log10(Mbar) * slope[0] + const[0]
-    print('Vflat:','{:.4}'.format((10**v_test)*u.km/u.s))
+    scatr = np.array([0.075,0.002])
+    v_test = BTFR_2(Mbar,slope,const,scatr)
+    #print('Vflat:','{:.4}'.format((v_test)*u.km/u.s))
     ####################################
     # Jing et al 2014
     # https://arxiv.org/abs/1401.8164
@@ -220,13 +229,13 @@ def setup_relations(mass,beams,thicc):
     # for most massive, to 20km/s for least
     # massive
     Vdisp = 8.#np.round(17.714 - 0.952*np.log10(MHI),2)
-    print('Vdisp=',Vdisp*u.km/u.s)
+    #print('Vdisp=',Vdisp*u.km/u.s)
     ###################################
     # Calculating Magnitude from vmax
     # Catinella et al 2005
     # https://arxiv.org/abs/astro-ph/0512051
-    Mag = Magcalc(v_flat,Rd,Rmax)
-    print('I-Band Magnitude (guess):','{:.4}'.format(Mag))
+    #Mag = Magcalc(v_flat,Rd,Rmax)
+    #print('I-Band Magnitude (guess):','{:.4}'.format(Mag))
     # Alternatively, TFR:
     # Ouellette et al 2017
     # https://arxiv.org/abs/1705.10794
@@ -235,33 +244,38 @@ def setup_relations(mass,beams,thicc):
     scatter = 0.222
 
     Mag = TFR(slope,const,v_flat)
-    print('I-Band Magnitude (TFR):','{:.4}'.format(Mag))
-
+    #print('I-Band Magnitude (TFR):','{:.4}'.format(Mag))
 
     dist = DHI / (4.*beams * (np.pi/162000.))
 
     dist = dist * u.kpc
     dist = dist.to_value(u.kpc)
 
-    print('distance [kpc]', round(dist,2))
+    #print('distance [kpc]', round(dist,2))
     delta = ((thicc*u.arcsec).to_value(u.rad)*(dist))* u.kpc
-    print('ringsize',np.round(delta/(1*u.kpc),4))
-    print('rings',np.round(DHI*u.kpc /delta,2))
+    #print('ringsize',np.round(delta/(1*u.kpc),4))
+    #print('rings',np.round(DHI*u.kpc /delta,2))
     radi = np.arange(0.,DHI,delta/u.kpc)
 
     vrot = make_vrot(radi,Mag,Rd,v_flat)
     sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,v_flat,mass)
-    print('Sigma0',round(np.max(sbr),6))
+    #print('Sigma0',round(np.max(sbr),6))
     z    = make_z(radi,vrot,Vdisp)
 
-    #plt.semilogy(radi,sbr)
-    #plt.show()
+    plt.figure(1)
+    plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
+    plt.semilogy(radi,sbr)
+    plt.xlabel('R [kpc]')
+    plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]')
+    plt.axvline(DHI/2.)
+    plt.savefig('SBR.png')
+    plt.figure(2)
+    plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
     plt.plot(radi,vrot)
-    #plt.xlabel('R [kpc]')
-    #plt.ylabel('Vc [km/s]')
-    #plt.axvline(DHI/2.)
-    plt.show()
-    #plt.savefig('rot.png')
+    plt.xlabel('R [kpc]')
+    plt.ylabel('Vc [km/s]')
+    plt.axvline(DHI/2.)
+    plt.savefig('VROT.png')
 
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,v_flat,Rs,dist)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist
