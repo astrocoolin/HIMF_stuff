@@ -6,6 +6,7 @@ from scipy.optimize import curve_fit
 from decimal import Decimal
 import random
 import os
+import datetime
 
 
 def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
@@ -183,10 +184,24 @@ END                                                                             
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)
 
+def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist):
+    fille = open('RC.dat',"w")
+    fille.write("#  Date = "+str(datetime.datetime.now())[0:10]+"\n")
+    fille.write('#  Mag  = '+str(Mag)+'\n')
+    fille.write('#  MHI   [dex Mo] = '+str(round(np.log10(mass),2))+'\n')
+    fille.write('#  Mbar  [dex Mo] = '+str(round(np.log10(Mbar),2))+'\n')
+    fille.write('#  Mstar [dex Mo] = '+str(round(np.log10(Mstar),2))+'\n')
+    fille.write('#  Vflat   [km/s] = '+str(round(vflat,2))+"\n")
+    fille.write('#  Vdisp   [km/s] = '+str(round(Vdisp,2))+'\n')
+    fille.write('#  Rs       [kpc] = '+str(round(Rs,2))+'\n')
+    fille.write('#  Distance [kpc] = '+str('{:.2E}'.format(dist))+'\n')
+    fille.write('#  DHI     [km/s] = '+str(round(DHI,2))+"\n")
+    fille.write('#  Rotation curve \n \n')
 
-def rotfile(radi,vrot,sbr,END):
-    fille = open('RC.txt',"w")
-    fille.write("#RAD \t VROT \t \t SBR \n")
-    fille.write("#(\") \t (km/s) \t (Jy km s^-1 arcsec^-2) \n")
+def rotfile(radi,vrot,sbr,z,END):
+    fille = open('RC.dat','a')
+    #fille.write("#RAD \t VROT \t \t SBR \t \t Z \n")
+    fille.write("#RAD \tVROT \t \tSBR \t \t \tZ \n")
+    fille.write("#(\") \t(km/s) \t\t(Jy km s^-1 as^-2) \t(kpc) \n")
     for i in range(1,END):
-        fille.write(str(radi[i])+'\t'+str(vrot[i])+'\t'+str(sbr[i])+'\n')
+        fille.write(str(radi[i])+'\t'+str('{:.3E}'.format(vrot[i]))+'\t'+str('{:.3E}'.format(sbr[i]))+'\t'+'\t'+str('{:.3E}'.format(z[i]))+'\n')
