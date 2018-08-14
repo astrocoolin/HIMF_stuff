@@ -61,7 +61,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     for i in range(0,len(vrot_str)):
         file.write(' +')
         file.write('%E' % Decimal(z[i]))
-    file.write("\nINCL= +6.00000E+01")
+    file.write("\nINCL= +"+str(float(inc)))
     file.write("\nPA= +4.50000E+01")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
@@ -70,7 +70,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nCONDISP=0")
     file.write("\nLTYPE= 3")
     file.write("\n")
-    file.write("\nCFLUX=2E-5") 
+    file.write("\nCFLUX=4E-5") 
     file.write("\nPENALTY= 0")
     file.write("\nWEIGHT= 0 ")
     file.write("\nRADSEP= 0.1 ")
@@ -124,7 +124,7 @@ BITPIX  =                  -64 / IEEE double precision floating point           
 NAXIS   =                    3 / NUMBER OF AXES                                 \
 NAXIS1  =              400.000 /Number of positions along axis 1                \
 NAXIS2  =              400.000 /Number of positions along axis 2                \
-NAXIS3  =              120.000 /Number of positions along axis 3                \
+NAXIS3  =              150.000 /Number of positions along axis 3                \
 BLOCKED =                    T / TAPE MAY BE BLOCKED                            \
 CROTA1  =   0.000000000000E+00 / PRIMARY ROTATION OF AXIS                       \
 CDELT1  =          -0.00111111 /                                                \
@@ -139,7 +139,7 @@ CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \
 CUNIT2  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
 CDELT3  =              4000.00 / PRIMARY PIXEL SEPARATION                       \
-CRPIX3  =              60.0000 / PRIMARY REFERENCE PIXEL                        \
+CRPIX3  =              75.0000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL3  =        1403931.64636 / PRIMARY REFERENCE VALUE                        \
 CTYPE3  = 'VELO-LSR'           / PRIMARY AXIS NAME                              \
 CUNIT3  = 'M/S     '           / PRIMARY AXIS UNITS                             \
@@ -179,7 +179,7 @@ BPA     =                    0 /                                                
 END                                                                             "
     header  = fits.header.Header.fromstring(teststr)
     
-    cube = np.zeros((120,400,400))
+    cube = np.zeros((150,400,400))
     hdu = fits.PrimaryHDU(cube,header=header)
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)

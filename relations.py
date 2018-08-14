@@ -36,12 +36,13 @@ def make_vrot(radi,Mag,hr,v):
     vt=func(Mag,*V0)
     rt=hr*func2(Mag,*rPE)
     a=np.max([0.,func2(Mag,*A)])
+    a=func2(Mag,*A)
 
     #print('vt[km/s]:',round(vt,2))
     #print('rt[arcsec]:',round(rt,2))
     #print('a:',round(a,2))
 
-    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
+    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),a
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
     sbr = np.zeros_like(radi)
@@ -96,7 +97,7 @@ def Magcalc(vrot,hr,Rmax):
     V0, foo = curve_fit(func, m, V0,sigma=dV0)
     rPE,foo = curve_fit(func, m, rPE,sigma=drPE)
     A, foo  = curve_fit(func2, m, A,sigma=dA)
-    Mag = np.arange(-24.,0.,0.1)
+    Mag = np.arange(-26.,0.,0.1)
     vt=func(Mag,*V0)
     Mag = round(Mag[np.argmin(abs(vt-vrot))],2)
     rt=hr*func(Mag,*rPE)
@@ -257,25 +258,31 @@ def setup_relations(mass,beams,thicc):
     #print('rings',np.round(DHI*u.kpc /delta,2))
     radi = np.arange(0.,DHI,delta/u.kpc)
 
-    vrot = make_vrot(radi,Mag,Rd,v_flat)
+    vrot,rc_slope = make_vrot(radi,Mag,Rd,v_flat)
     sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,v_flat,mass)
     #print('Sigma0',round(np.max(sbr),6))
     z    = make_z(radi,vrot,Vdisp)
 
-    plt.figure(1)
-    plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
-    plt.semilogy(radi,sbr)
-    plt.xlabel('R [kpc]')
-    plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]')
-    plt.axvline(DHI/2.)
-    plt.savefig('SBR.png')
-    plt.figure(2)
-    plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
-    plt.plot(radi,vrot)
-    plt.xlabel('R [kpc]')
-    plt.ylabel('Vc [km/s]')
-    plt.axvline(DHI/2.)
-    plt.savefig('VROT.png')
+    mid = int(len(radi)/2)-1
+    end = len(radi)-1
+    slope = (np.log10(vrot[end])-np.log10(vrot[mid]))/(np.log10(radi[end])-np.log10(radi[mid]))
+   
+    make_plots = False
+    if (make_plots):
+        plt.figure(1)
+        plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
+        plt.semilogy(radi,sbr)
+        plt.xlabel('R [kpc]')
+        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]')
+        plt.axvline(DHI/2.)
+        plt.savefig('SBR.png')
+        plt.figure(2)
+        plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
+        plt.plot(radi,vrot)
+        plt.xlabel('R [kpc]')
+        plt.ylabel('Vc [km/s]')
+        plt.axvline(DHI/2.)
+        plt.savefig('VROT.png')
 
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,v_flat,Rs,dist)
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, rc_slope,v_flat,Mstar,slope,Rd/3.31
