@@ -17,7 +17,7 @@ def func2(x,b,c):
     #Linear fit for A, Rt
     return b*x + c
 
-def make_vrot(radi,Mag,hr,v):
+def make_vrot(radi,Mag,hr,v,RHI,mstar):
     A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
     dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
 
@@ -34,15 +34,34 @@ def make_vrot(radi,Mag,hr,v):
     A, foo  = curve_fit(func2, m, A,sigma=dA)
 
     vt=func(Mag,*V0)
-    rt=hr*func2(Mag,*rPE)
-    a=np.max([0.,func2(Mag,*A)])
     a=func2(Mag,*A)
+
+    rt=hr*func2(Mag,*rPE) #changing
+
+    rt = np.arange(0.00,100.,0.0001)*RHI
+    x2 = RHI * 2.
+    x1 = RHI
+    stest = 0.123 - 0.137*(np.log10(mstar)-9.471)
+
+    slope = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10(vt*(1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+    slope = slope / np.log10(2.)
+
+    #for i,valu in enumerate(slope):
+    #    if not np.isfinite(valu):
+
+
+    #print(stest, np.log10(mstar),np.size(slope),np.size(stest))
+
+    rt = rt[np.argmin(abs(slope[np.isfinite(slope)] - stest))]
+    slope = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10(vt*(1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+    denom = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt))
+    slope = slope / np.log10(2.)
 
     #print('vt[km/s]:',round(vt,2))
     #print('rt[arcsec]:',round(rt,2))
     #print('a:',round(a,2))
-
-    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),a
+    print(rt/RHI)
+    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),denom,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
     sbr = np.zeros_like(radi)
@@ -85,7 +104,7 @@ def make_z(radi,vrot,sigma):
             z[i] = sigma / ( np.sqrt(2./3.) * vrot[1]/radi[1])
     return  z
 
-def Magcalc(vrot,hr,Rmax):
+def Magcalc(vrot,hr,RHI):
     A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
     dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
     V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
@@ -95,15 +114,16 @@ def Magcalc(vrot,hr,Rmax):
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
     V0, foo = curve_fit(func, m, V0,sigma=dV0)
-    rPE,foo = curve_fit(func, m, rPE,sigma=drPE)
+    rPE,foo = curve_fit(func2, m, rPE,sigma=drPE)
     A, foo  = curve_fit(func2, m, A,sigma=dA)
-    Mag = np.arange(-26.,0.,0.1)
+    Mag = np.arange(-40.,0.,0.1)
+
     vt=func(Mag,*V0)
+    a =func2(Mag,*A)
+    rt=func2(Mag,*rPE)
+
+    vt = vt #/ (1. + a*RHI*4./rt)
     Mag = round(Mag[np.argmin(abs(vt-vrot))],2)
-    rt=hr*func(Mag,*rPE)
-    a=func2(Mag,*A)
-    vt=func(Mag,*V0)
-    vRmax = np.max(vt*(1.-np.exp(-Rmax/rt))*(1.+a*Rmax/rt))
     return Mag
 
 def err(errbar):
@@ -244,7 +264,8 @@ def setup_relations(mass,beams,thicc):
     const = np.array([-22.38,0.33])
     scatter = 0.222
 
-    Mag = TFR(slope,const,v_flat)
+    #Mag = TFR(slope,const,v_flat)
+    Mag = Magcalc(v_flat,Rd,DHI/2.)
     #print('I-Band Magnitude (TFR):','{:.4}'.format(Mag))
 
     dist = DHI / (4.*beams * (np.pi/162000.))
@@ -258,7 +279,7 @@ def setup_relations(mass,beams,thicc):
     #print('rings',np.round(DHI*u.kpc /delta,2))
     radi = np.arange(0.,DHI,delta/u.kpc)
 
-    vrot,rc_slope = make_vrot(radi,Mag,Rd,v_flat)
+    vrot,rc_slope,rPE = make_vrot(radi,Mag,Rd,v_flat,DHI/2.,Mstar)
     sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,v_flat,mass)
     #print('Sigma0',round(np.max(sbr),6))
     z    = make_z(radi,vrot,Vdisp)
@@ -267,7 +288,7 @@ def setup_relations(mass,beams,thicc):
     end = len(radi)-1
     slope = (np.log10(vrot[end])-np.log10(vrot[mid]))/(np.log10(radi[end])-np.log10(radi[mid]))
    
-    make_plots = False
+    make_plots = True
     if (make_plots):
         plt.figure(1)
         plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
@@ -283,6 +304,6 @@ def setup_relations(mass,beams,thicc):
         plt.ylabel('Vc [km/s]')
         plt.axvline(DHI/2.)
         plt.savefig('VROT.png')
-
+    print(np.log10(MHI))
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,v_flat,Rs,dist)
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, rc_slope,v_flat,Mstar,slope,Rd/3.31
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, rc_slope,v_flat,Mstar,slope,Rd/3.31,rPE

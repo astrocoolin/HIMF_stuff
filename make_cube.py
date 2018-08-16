@@ -19,19 +19,19 @@ delta = 5.
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
-inc_list   = [20.,40.,60.,80.,90.]
-mass_list  = np.arange(6.5,10.6,0.01)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
-sn_list    = [16.,8.,4.,2.]
+#inc_list   = [20.,40.,60.,80.,90.]
+mass_list  = np.arange(6.5,10.6,0.05)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
+#sn_list    = [16.,8.,4.,2.]
 
-#beam_list  = [32.]
+beam_list  = [32.]
 inc_list   = [60.]
-#mass_list  = [10.3]
-#sn_list    = [16.]
+mass_list  = np.arange(6.5,10.6,1)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
+sn_list    = [16.]
 
-catalog = 'sample_5.txt'
+catalog = 'sample_10.txt'
 file = open(catalog,'w')
 
-file.write("mass "+"RHI "+ "Mag "+"Alpha "+"Vmax "+"Vflat "+"Mstar "+"slope "+" rd"+"\n")
+file.write("mass "+"RHI "+ "Mag "+"Alpha "+"Vmax "+"Vflat "+"Mstar "+"slope "+" rd"+" rPE"+"\n")
 print('beams:',beam_list)
 print('mass:',mass_list)
 print('inc:',inc_list)
@@ -43,6 +43,10 @@ for inc in inc_list:
     for i, mass in enumerate(mass_list):
         for snr in sn_list:
             for beams in beam_list:
+                print('inc:',[inc])
+                print('mass:',[mass])
+                print('snr:',[snr])
+                print('beams:',[beams])
                 #########################################################
                 # Names of files
                 #########################################################
@@ -57,7 +61,7 @@ for inc in inc_list:
                 # Scaling everything in terms of arcseconds instead of
                 # in terms of kilparsecs; divide by distance
                 #########################################################
-                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,Mstar,slope,rd = \
+                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,Mstar,slope,rd,rPE = \
                         setup_relations(mass,beams,delta)
                 #sbr = sbr * 0.5E-2
                 #########################################################
@@ -95,7 +99,7 @@ for inc in inc_list:
                 #########################################################
                 # Make new cube, folder for it, clear old files
                 #########################################################
-                make_cube = False
+                make_cube = True
                 if (make_cube):
                     emptyfits(inset)
                     os.system("tirific deffile="+defname)
@@ -112,9 +116,9 @@ for inc in inc_list:
                     os.system("rm "+outset)
                     os.system("rm empty.fits Logfile.log")
                 #########################################################
-                #os.system("mv "+defname+" VROT.png SBR.png "+fname)
+                os.system("mv "+defname+" VROT.png SBR.png "+fname)
                 os.system("mv "+defname+" "+fname)
                 os.system("cp RC.dat "+fname)
                 #########################################################
-                file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+" "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+" "+str(slope)+" "+str(rd)+"\n")
+                file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+" "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+" "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")
     os.system("rm RC.dat")
