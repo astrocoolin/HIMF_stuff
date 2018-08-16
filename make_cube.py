@@ -18,15 +18,16 @@ delta = 5.
 # Ranges of all of the parameters to be varied
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
-beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
-#inc_list   = [20.,40.,60.,80.,90.]
-mass_list  = np.arange(6.5,10.6,0.05)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
-#sn_list    = [16.,8.,4.,2.]
 
 beam_list  = [32.]
-inc_list   = [60.]
-mass_list  = np.arange(6.5,10.6,1)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
+inc_list   = [80.]
+mass_list  = [9.5]
 sn_list    = [16.]
+
+beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
+inc_list   = [20.,40.,60.,80.,90.]
+mass_list  = np.arange(5.,10.6,0.5)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
+sn_list    = [16.,8.,4.,2.]
 
 catalog = 'sample_10.txt'
 file = open(catalog,'w')
@@ -43,10 +44,10 @@ for inc in inc_list:
     for i, mass in enumerate(mass_list):
         for snr in sn_list:
             for beams in beam_list:
-                print('inc:',[inc])
-                print('mass:',[mass])
-                print('snr:',[snr])
-                print('beams:',[beams])
+                #print('inc:',[inc])
+                #print('mass:',[mass])
+                #print('snr:',[snr])
+                #print('beams:',[beams])
                 #########################################################
                 # Names of files
                 #########################################################

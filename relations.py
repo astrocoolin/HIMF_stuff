@@ -60,7 +60,7 @@ def make_vrot(radi,Mag,hr,v,RHI,mstar):
     #print('vt[km/s]:',round(vt,2))
     #print('rt[arcsec]:',round(rt,2))
     #print('a:',round(a,2))
-    print(rt/RHI)
+    #print(rt/RHI)
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),denom,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
@@ -297,13 +297,14 @@ def setup_relations(mass,beams,thicc):
         plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]')
         plt.axvline(DHI/2.)
         plt.savefig('SBR.png')
+        plt.close(1)
         plt.figure(2)
-        plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
+        plt.title(str(np.log10(mass))+' dex M$_{\odot}$\n'+str(round(np.log10(Mbar),3))+' dex M$_{\odot}$')
         plt.plot(radi,vrot)
         plt.xlabel('R [kpc]')
         plt.ylabel('Vc [km/s]')
         plt.axvline(DHI/2.)
         plt.savefig('VROT.png')
-    print(np.log10(MHI))
+        plt.close(2)
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,v_flat,Rs,dist)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, rc_slope,v_flat,Mstar,slope,Rd/3.31,rPE
