@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
@@ -38,7 +40,7 @@ def make_vrot(radi,Mag,hr,v,RHI,mstar):
 
     rt=hr*func2(Mag,*rPE) #changing
 
-    rt = np.arange(0.00,100.,0.0001)*RHI
+    rt = np.arange(0.0001,2.,0.0001)*RHI
     x2 = RHI * 2.
     x1 = RHI
     stest = 0.123 - 0.137*(np.log10(mstar)-9.471)
@@ -60,7 +62,6 @@ def make_vrot(radi,Mag,hr,v,RHI,mstar):
     #print('vt[km/s]:',round(vt,2))
     #print('rt[arcsec]:',round(rt,2))
     #print('a:',round(a,2))
-    #print(rt/RHI)
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),denom,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
@@ -299,7 +300,7 @@ def setup_relations(mass,beams,thicc):
         plt.savefig('SBR.png')
         plt.close(1)
         plt.figure(2)
-        plt.title(str(np.log10(mass))+' dex M$_{\odot}$\n'+str(round(np.log10(Mbar),3))+' dex M$_{\odot}$')
+        plt.title(str(np.log10(mass))+' dex M$_{\odot} HI$\n'+str(round(np.log10(Mbar),3))+' dex M$_{\odot} Mstar$')
         plt.plot(radi,vrot)
         plt.xlabel('R [kpc]')
         plt.ylabel('Vc [km/s]')

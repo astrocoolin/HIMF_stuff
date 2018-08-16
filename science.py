@@ -40,9 +40,9 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     print('PSF convolution')
     for vel in range(0,cube.shape[0]):
         if  np.size(cube[vel,(cube[vel,:,:]) > nfrac*cube[:,:,:].max()]) > 0:
-            cube[vel,:,:]=cube[vel,:,:]#b_math(cube[vel,:,:],noise,gauss)
+            cube[vel,:,:]=b_math(cube[vel,:,:],noise,gauss)
         else:
-            cube[vel,:,:]=cube[vel,:,:]#b_math(np.zeros_like(cube[vel,:,:]),noise,gauss)
+            cube[vel,:,:]=b_math(np.zeros_like(cube[vel,:,:]),noise,gauss)
  
     
     prihdr = hdulist[0].header
@@ -63,7 +63,7 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hlist.writeto(outname,overwrite=True)
 
 def b_math(channel,noise,gauss):
-    channel_noise = np.random.normal(loc=channel*0,scale=noise)+channel
+    channel_noise = np.random.normal(loc=channel,scale=noise)+channel
     return convolve_fft(channel_noise,gauss)
 
 

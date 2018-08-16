@@ -25,7 +25,7 @@ mass_list  = [9.5]
 sn_list    = [16.]
 
 beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
-inc_list   = [20.,40.,60.,80.,90.]
+inc_list   = [5.,25.,45.,65.,85.]
 mass_list  = np.arange(5.,10.6,0.5)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
 sn_list    = [16.,8.,4.,2.]
 
@@ -118,7 +118,7 @@ for inc in inc_list:
                     os.system("rm empty.fits Logfile.log")
                 #########################################################
                 os.system("mv "+defname+" VROT.png SBR.png "+fname)
-                os.system("mv "+defname+" "+fname)
+                #os.system("mv "+defname+" "+fname)
                 os.system("cp RC.dat "+fname)
                 #########################################################
                 file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+" "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+" "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")
