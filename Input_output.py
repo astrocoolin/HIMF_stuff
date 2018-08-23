@@ -70,7 +70,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nCONDISP=0")
     file.write("\nLTYPE= 3")
     file.write("\n")
-    file.write("\nCFLUX=1E-6") 
+    file.write("\nCFLUX=1E-5") 
     file.write("\nPENALTY= 0")
     file.write("\nWEIGHT= 0 ")
     file.write("\nRADSEP= 0.1 ")

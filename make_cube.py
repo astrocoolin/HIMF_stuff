@@ -19,15 +19,15 @@ delta = 5.
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 
-beam_list  = [32.]
-inc_list   = [80.]
-mass_list  = [9.5]
-sn_list    = [16.]
-
 beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
 inc_list   = [5.,25.,45.,65.,85.]
 mass_list  = np.arange(5.,10.6,0.5)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
 sn_list    = [16.,8.,4.,2.]
+
+beam_list  = [32.]
+inc_list   = [80.]
+mass_list  = [9.5]
+sn_list    = [16.]
 
 catalog = 'sample_10.txt'
 file = open(catalog,'w')
@@ -100,16 +100,17 @@ for inc in inc_list:
                 #########################################################
                 # Make new cube, folder for it, clear old files
                 #########################################################
-                make_cube = True
+                make_cube = False
                 if (make_cube):
                     emptyfits(inset)
                     os.system("tirific deffile="+defname)
                     print("Cube finished")
                 #########################################################
-                filecheck = Path(fname)
-                if filecheck.is_dir (): os.system("rm -r "+fname)
-                os.system("mkdir "+fname)
-                #print("Refreshed folder")
+                if (make_cube):
+                    filecheck = Path(fname)
+                    if filecheck.is_dir (): os.system("rm -r "+fname)
+                    os.system("mkdir "+fname)
+                    #print("Refreshed folder")
                 #########################################################
                 if (make_cube):
                     first_beam(outset,outname,DHI/2.,beams,snr,inc,mass)

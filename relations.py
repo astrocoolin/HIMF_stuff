@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
@@ -10,25 +10,19 @@ from Input_output import rothead
 
 def func(x,a,b,c,d):
     #exponential fit for V0, rPE
-    #return d*x**3. + a*x**2. + b*x + c
-    #return d*x**3. + a*x**2. + b*x + c
-    #return a*x**2. + b*x + c
     return a*np.exp(-x*b-c) +d*x
 
 def func2(x,b,c):
     #Linear fit for A, Rt
     return b*x + c
 
-def make_vrot(radi,Mag,hr,v,RHI,mstar):
-    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
-    dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
-
+def make_vrot(radi,Mag,Rd,v,RHI,mstar):
     V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
     dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
-
+    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
+    dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
     rPE = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
     drPE = np.array([0.007,0.003,0.003,0.002,0.003,0.004,0.005,0.008,0.008,0.002])
-
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
     V0, foo = curve_fit(func, m, V0,sigma=dV0)
@@ -37,32 +31,77 @@ def make_vrot(radi,Mag,hr,v,RHI,mstar):
 
     vt=func(Mag,*V0)
     a=func2(Mag,*A)
+    rt=Rd*func2(Mag,*rPE) 
 
-    rt=hr*func2(Mag,*rPE) #changing
+    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),rt
 
-    rt = np.arange(0.0001,2.,0.0001)*RHI
-    x2 = RHI * 2.
-    x1 = RHI
-    stest = 0.123 - 0.137*(np.log10(mstar)-9.471)
+def Magcalc(vrot,Rd,RHI,mstar):
+    # Find Mag, and slope based on
+    # Catinella et al 2007
+    # https://arxiv.org/abs/astro-ph/0512051
+    # Dutton et al 2018
+    # https://arxiv.org/abs/1807.10518
+    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
+    dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
+    rPE = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
+    drPE = np.array([0.007,0.003,0.003,0.002,0.003,0.004,0.005,0.008,0.008,0.002])
+    V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
+    dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
+    m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
-    slope = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10(vt*(1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-    slope = slope / np.log10(2.)
+    V0, foo  = curve_fit(func , m, V0,sigma=dV0)
+    rPE, foo = curve_fit(func2, m, rPE,sigma=drPE)
+    A, foo   = curve_fit(func2, m, A,sigma=dA)
 
-    #for i,valu in enumerate(slope):
-    #    if not np.isfinite(valu):
+    Mag = np.arange(-27.5,0.,0.001)
+    a=func2(Mag,*A)
+    R_opt = (3.31+err(0.01))*Rd
+    slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
 
+    # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
+    # with new Alpha
+    for i in range(0,2):
+        Mag = np.arange(-27.5,0.,0.001)
+        vt=func(Mag,*V0)
+        rt=Rd*func2(Mag,*rPE)
+        
+        x2 = RHI * 2.
+        x1 = RHI
+        vt_0 = vt
+        vt = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
+       
+        if False:
+            plt.plot(Mag[np.argmax(vt):],vt[np.argmax(vt):])
+            plt.plot(Mag[np.argmax(vt):],vt_0[np.argmax(vt):])
+            plt.show()
+    
+        # Best guess for Magnitude based on vrot with other params
+        ind = np.argmin(abs(vt-vrot))
+        Mag = round(Mag[ind],2)
 
-    #print(stest, np.log10(mstar),np.size(slope),np.size(stest))
+        if len(np.array([a])) != 1.: a = a[ind]
+        #print('HERE:',Mag,'Vt guess',round(vt[ind],2),'actual vrot',vrot,'V0',vt_0[ind],'alpha',a,'starmass',np.log10(mstar))
+    
+        vt=func(Mag,*V0)
+        rt=Rd*func2(Mag,*rPE)
+        
+        a = np.arange(-0.03,0.4,0.0001)
+        slope = np.log10((1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+        slope = slope / np.log10(2.)
+    
+        #print(slope)
+        if False:
+            plt.plot(a,slope)
+            plt.xlabel('a: polyex outer slope')
+            plt.ylabel('$\Delta$log(v)/$\Delta$log(r)')
+            plt.show()
+        
+        a = a[np.argmin(abs(slope - slope_sparc))]
+    
+        vt = vt_0[ind] * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
+        #print('HERE: adjusted vt',vt,'adjusted a',a,'best slope',slope[np.argmin(abs(slope[np.isfinite(slope)] - slope_sparc))],'real slope',slope_sparc)
 
-    rt = rt[np.argmin(abs(slope[np.isfinite(slope)] - stest))]
-    slope = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10(vt*(1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-    denom = np.log10(vt*(1.-np.exp(-x2/rt))*(1.+a*x2/rt))
-    slope = slope / np.log10(2.)
-
-    #print('vt[km/s]:',round(vt,2))
-    #print('rt[arcsec]:',round(rt,2))
-    #print('a:',round(a,2))
-    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),denom,rt
+    return Mag,a,slope
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
     sbr = np.zeros_like(radi)
@@ -105,27 +144,6 @@ def make_z(radi,vrot,sigma):
             z[i] = sigma / ( np.sqrt(2./3.) * vrot[1]/radi[1])
     return  z
 
-def Magcalc(vrot,hr,RHI):
-    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
-    dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
-    V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
-    dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
-    rPE = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
-    drPE = np.array([0.007,0.003,0.003,0.002,0.003,0.004,0.005,0.008,0.008,0.002])
-    m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
-
-    V0, foo = curve_fit(func, m, V0,sigma=dV0)
-    rPE,foo = curve_fit(func2, m, rPE,sigma=drPE)
-    A, foo  = curve_fit(func2, m, A,sigma=dA)
-    Mag = np.arange(-40.,0.,0.1)
-
-    vt=func(Mag,*V0)
-    a =func2(Mag,*A)
-    rt=func2(Mag,*rPE)
-
-    vt = vt #/ (1. + a*RHI*4./rt)
-    Mag = round(Mag[np.argmin(abs(vt-vrot))],2)
-    return Mag
 
 def err(errbar):
     return errbar*(np.random.random()*2. - 1.)
@@ -153,14 +171,7 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
     Mstar = mass * 1./slope - const/slope
     return 10.** Mstar       
 
-def BTFR(Mbar,slope,const):
-    #Baryonic Tully Fisher
-    slope = slope[0] + err(slope[1])
-    const = const[0] + err(const[1])
-    logv = np.log10(Mbar) * 1./slope - const/slope
-    return 10.**(logv)
-
-def BTFR_2(Mbar,slope,const,scatr):
+def BTFR(Mbar,slope,const,scatr):
     #Baryonic Tully Fisher
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])+err(scatr[0]+err(scatr[1]))
@@ -174,36 +185,40 @@ def TFR(slope,const,vflat):
     Mag = slope * (np.log10(vflat) -2.3)+const
     return Mag
 
-def expdisk(a,b,g,M0,Mass):
+def expdisk(v,slope,const,scatr):
     #scale length for the polyex fit
-    return g * (Mass)**a * (1. + Mass/M0)**(b-a)
-    
+    slope = slope[0] + err(slope[1])
+    const = const[0] + err(const[1]) + err(scatr)
+    return 10.**(const + slope * np.log10(v))
 
 def setup_relations(mass,beams,thicc):
-    ####################################
+    ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
     i = np.array(np.argmin(abs(float(mass)-MHI)))
     MHI = MHI[i]
-    ####################################
+    # Msun
+
+    ######################################################
     # Martin et al 2010 
     # https://arxiv.org/abs/1008.5107
     phi_0           = 0.0048 #\pm 0.3E-3
     Mstar           = 10.**9.96 #\pm 0.02 dex
     alpha           = -1.33 #\pm 0.02
     HIMF = phi(MHI,Mstar,alpha,phi_0)
-    # MPC^-3 dex^-1
-    ####################################
+    # Mpc^-3 dex^-1
+
+    ######################################################
     # Jing Wang, Koribalski, et al 2016
     # https://arxiv.org/abs/1605.01489
     slope = np.array([0.506,0.003])
     const = np.array([-3.293,0.009])
     scatter = 0.06 #dex
-    
     DHI = DHI_calc(MHI,slope, const)
-    #print('HI Radius:','{:.4}'.format(DHI/2.*u.kpc))
-    ####################################
-    # Bradford et al 2015, right after eq 4
+    # kpc
+
+    ######################################################
+    # Bradford et al 2015, Fig 5
     # https://arxiv.org/abs/1505.04819
     split           = 9.2832
     Mgas            = MHI * 1.4
@@ -212,62 +227,41 @@ def setup_relations(mass,beams,thicc):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
-    ####################################
-    # Lelli et al 2015
-    # https://arxiv.org/abs/1512.04543
-    slope = np.array([3.71,0.08])
-    const = np.array([2.27,0.18])
-    v_flat = BTFR(Mbar,slope,const)
-    #print('Vflat:','{:.4}'.format(v_flat*u.km/u.s))
+    # Msun
+
+    ######################################################
+    # Bradford et al 2015, Fig 6
+    # https://arxiv.org/abs/1505.04819
     slope = np.array([0.277,0.004])
     const = np.array([-0.672,0.041])
     scatr = np.array([0.075,0.002])
-    v_test = BTFR_2(Mbar,slope,const,scatr)
-    #print('Vflat:','{:.4}'.format((v_test)*u.km/u.s))
-    ####################################
+    vflat = BTFR(Mbar,slope,const,scatr)
+    # km/s
+
+    ######################################################
     # Jing et al 2014
     # https://arxiv.org/abs/1401.8164
     # HI scale length = 0.18 RHI
     Rs = (DHI/2.)*0.18
-    ####################################
-    # Mosleh and Franx 2013
-    # https://arxiv.org/abs/1302.6240
-    # 'Sersic n < 2.5'
-    alpha   = np.array([0.124,0.081])
-    beta    = np.array([0.278,0.161])
-    gamma   = 10.**np.array([-0.874,0.756])
-    M0      = 10.**np.array([10.227,0.230])
-    
-    Rd = 3.31*(expdisk(alpha[0],beta[0],gamma[0],M0[0],Mstar))
-    ###################################
-    # Approximate stuff
-    # This is from Papastergis & Shankar 2012
-    # Based on where the Vmax,HI is measured.
-    # Smaller galaxies have Rmax at a higher
-    # fraction of DHI than more massive galaxies
-    Rmax = (DHI/2.) / (np.log10(MHI) -5.)
-    ###################################
-    # Velocity dispersion to range from 8km/s
-    # for most massive, to 20km/s for least
-    # massive
-    Vdisp = 8.#np.round(17.714 - 0.952*np.log10(MHI),2)
-    #print('Vdisp=',Vdisp*u.km/u.s)
-    ###################################
+    # kpc
+
+    ######################################################
+    # Saintonge et al 2007
+    # https://arxiv.org/abs/0710.0760
+    slope = np.array([0.56,0.04])
+    const = np.array([-0.36,0.08])
+    scatr = np.array([0.16])
+    Rd = expdisk(vflat,slope,const,scatr)
+    # Rd I-band
+
+    #####################################################
     # Calculating Magnitude from vmax
     # Catinella et al 2005
     # https://arxiv.org/abs/astro-ph/0512051
-    #Mag = Magcalc(v_flat,Rd,Rmax)
-    #print('I-Band Magnitude (guess):','{:.4}'.format(Mag))
-    # Alternatively, TFR:
-    # Ouellette et al 2017
-    # https://arxiv.org/abs/1705.10794
-    slope = np.array([-7.68,0.58])
-    const = np.array([-22.38,0.33])
-    scatter = 0.222
+    Mag,alpha,slope = Magcalc(vflat,Rd,DHI/2.,Mstar)
+    # I-band mag
 
-    #Mag = TFR(slope,const,v_flat)
-    Mag = Magcalc(v_flat,Rd,DHI/2.)
-    #print('I-Band Magnitude (TFR):','{:.4}'.format(Mag))
+    #####################################################
 
     dist = DHI / (4.*beams * (np.pi/162000.))
 
@@ -280,8 +274,8 @@ def setup_relations(mass,beams,thicc):
     #print('rings',np.round(DHI*u.kpc /delta,2))
     radi = np.arange(0.,DHI,delta/u.kpc)
 
-    vrot,rc_slope,rPE = make_vrot(radi,Mag,Rd,v_flat,DHI/2.,Mstar)
-    sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,v_flat,mass)
+    vrot,rPE = make_vrot(radi,Mag,Rd,vflat,DHI/2.,Mstar)
+    sbr  = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,vflat,mass)
     #print('Sigma0',round(np.max(sbr),6))
     z    = make_z(radi,vrot,Vdisp)
 
@@ -289,7 +283,7 @@ def setup_relations(mass,beams,thicc):
     end = len(radi)-1
     slope = (np.log10(vrot[end])-np.log10(vrot[mid]))/(np.log10(radi[end])-np.log10(radi[mid]))
    
-    make_plots = True
+    make_plots = False
     if (make_plots):
         plt.figure(1)
         plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
