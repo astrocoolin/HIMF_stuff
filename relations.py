@@ -16,6 +16,11 @@ def func2(x,b,c):
     #Linear fit for A, Rt
     return b*x + c
 
+def func3(x,a,b,c,d,e):
+    #exponential fit for V0, rPE
+    #return  -a*np.exp(x*b-c) -d*x
+    return a*np.log10(-x) - b
+
 def make_vrot(radi,Mag,Rd,v,RHI,mstar):
     V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
     dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
@@ -26,12 +31,12 @@ def make_vrot(radi,Mag,Rd,v,RHI,mstar):
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
     V0, foo = curve_fit(func, m, V0,sigma=dV0)
-    rPE,foo = curve_fit(func2, m, rPE,sigma=drPE)
+    rPE,foo = curve_fit(func3, m, rPE,sigma=drPE)
     A, foo  = curve_fit(func2, m, A,sigma=dA)
 
     vt=func(Mag,*V0)
     a=func2(Mag,*A)
-    rt=Rd*func2(Mag,*rPE) 
+    rt=Rd*func3(Mag,*rPE) 
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),rt
 
@@ -41,66 +46,79 @@ def Magcalc(vrot,Rd,RHI,mstar):
     # https://arxiv.org/abs/astro-ph/0512051
     # Dutton et al 2018
     # https://arxiv.org/abs/1807.10518
-    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
+    A_=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
     dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
-    rPE = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
+    rPE_ = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
     drPE = np.array([0.007,0.003,0.003,0.002,0.003,0.004,0.005,0.008,0.008,0.002])
-    V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
+    V0_ = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
     dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
-    V0, foo  = curve_fit(func , m, V0,sigma=dV0)
-    rPE, foo = curve_fit(func2, m, rPE,sigma=drPE)
-    A, foo   = curve_fit(func2, m, A,sigma=dA)
+    V0, foo  = curve_fit(func , m, V0_,sigma=dV0)
+    rPE, foo = curve_fit(func3, m, rPE_,sigma=drPE)
+    A, foo   = curve_fit(func2, m, A_,sigma=dA)
 
     Mag = np.arange(-27.5,0.,0.001)
     a=func2(Mag,*A)
+    vt=func(Mag,*V0)
+    rt=Rd*func3(Mag,*rPE)
+    if False:
+        plt.plot(Mag,rt/Rd)
+        plt.scatter(m,rPE_)
+        plt.show()
+
     R_opt = (3.31+err(0.01))*Rd
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
     # with new Alpha
-    for i in range(0,2):
+    for i in range(0,250):
         Mag = np.arange(-27.5,0.,0.001)
         vt=func(Mag,*V0)
-        rt=Rd*func2(Mag,*rPE)
+        rt=Rd*func3(Mag,*rPE)
         
         x2 = RHI * 2.
         x1 = RHI
         vt_0 = vt
         vt = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
-       
-        if False:
-            plt.plot(Mag[np.argmax(vt):],vt[np.argmax(vt):])
-            plt.plot(Mag[np.argmax(vt):],vt_0[np.argmax(vt):])
-            plt.show()
-    
+        #plt.plot(Mag,vt)
+        #plt.show()
+      
         # Best guess for Magnitude based on vrot with other params
         ind = np.argmin(abs(vt-vrot))
         Mag = round(Mag[ind],2)
-
         if len(np.array([a])) != 1.: a = a[ind]
+        print('1: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.round(vt[ind],2),"Mag:",Mag,'Alpha',np.round(a,5),'Max Possible',np.max(vt))
+
         #print('HERE:',Mag,'Vt guess',round(vt[ind],2),'actual vrot',vrot,'V0',vt_0[ind],'alpha',a,'starmass',np.log10(mstar))
     
         vt=func(Mag,*V0)
-        rt=Rd*func2(Mag,*rPE)
+        rt=Rd*func3(Mag,*rPE)
         
-        a = np.arange(-0.03,0.4,0.0001)
-        slope = np.log10((1.-np.exp(-x2/rt))*(1.+a*x2/rt)) - np.log10((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-        slope = slope / np.log10(2.)
+        a = np.arange(-0.04,0.4,0.0001)
+        a_plt = np.arange(-0.04,0.4,0.0001)
+        slope1 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
+        slope2 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+        slope1_log = np.log10(slope1[(slope1>0) & (slope2>0)])
+        slope2_log = np.log10(slope2[(slope2>0) & (slope1>0)])
+        slope = (slope1_log-slope2_log) / np.log10(2.)
     
-        #print(slope)
-        if False:
-            plt.plot(a,slope)
-            plt.xlabel('a: polyex outer slope')
-            plt.ylabel('$\Delta$log(v)/$\Delta$log(r)')
-            plt.show()
-        
         a = a[np.argmin(abs(slope - slope_sparc))]
     
         vt = vt_0[ind] * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
+        vtest = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
         #print('HERE: adjusted vt',vt,'adjusted a',a,'best slope',slope[np.argmin(abs(slope[np.isfinite(slope)] - slope_sparc))],'real slope',slope_sparc)
-
+        print('2: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.float(np.round(vt,2)),"Mag:",Mag,'Alpha',np.round(a,2))
+    if True:
+            Mag_plt = np.arange(-27.5,0.,0.001)
+            plt.plot(Mag_plt[np.argmax(vtest):],vtest[np.argmax(vtest):])
+            plt.plot(Mag_plt[np.argmax(vtest):],vt_0[np.argmax(vtest):])
+            plt.show()
+    if False:
+            plt.plot(a_plt[(slope1>0) & (slope2>0)],slope)
+            plt.xlabel('a: polyex outer slope')
+            plt.ylabel('$\Delta$log(v)/$\Delta$log(r)')
+            plt.show()
     return Mag,a,slope
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
@@ -258,10 +276,15 @@ def setup_relations(mass,beams,thicc):
     # Calculating Magnitude from vmax
     # Catinella et al 2005
     # https://arxiv.org/abs/astro-ph/0512051
-    Mag,alpha,slope = Magcalc(vflat,Rd,DHI/2.,Mstar)
+    Mag,alpha,rc_slope = Magcalc(vflat,Rd,DHI/2.,Mstar)
     # I-band mag
 
     #####################################################
+    # Velocity dispersion to range from 8km/s
+    # for most massive, to 20km/s for least
+    # massive?
+    # Constant for now.
+    Vdisp = 8.
 
     dist = DHI / (4.*beams * (np.pi/162000.))
 
@@ -301,5 +324,5 @@ def setup_relations(mass,beams,thicc):
         plt.axvline(DHI/2.)
         plt.savefig('VROT.png')
         plt.close(2)
-    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,v_flat,Rs,dist)
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, rc_slope,v_flat,Mstar,slope,Rd/3.31,rPE
+    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist)
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Rd*3.31,rPE

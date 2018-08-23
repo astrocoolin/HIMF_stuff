@@ -10,6 +10,8 @@ from relations import *
 # Setting constants: KPC, MPC scales, central SB
 # Delta is the increment range in arcseconds
 #########################################################
+make_output = False
+make_cube = False
 pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
@@ -26,7 +28,7 @@ sn_list    = [16.,8.,4.,2.]
 
 beam_list  = [32.]
 inc_list   = [80.]
-mass_list  = [9.5]
+mass_list  = [10.]
 sn_list    = [16.]
 
 catalog = 'sample_10.txt'
@@ -62,7 +64,9 @@ for inc in inc_list:
                 # Scaling everything in terms of arcseconds instead of
                 # in terms of kilparsecs; divide by distance
                 #########################################################
-                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,Mstar,slope,rd,rPE = \
+                radi,sbr,vrot,condisp,z,\
+                        MHI,DHI,Mag,dist,alpha,vflat,\
+                        Mstar,slope,rd,rPE =\
                         setup_relations(mass,beams,delta)
                 #sbr = sbr * 0.5E-2
                 #########################################################
@@ -94,13 +98,13 @@ for inc in inc_list:
                 # Make an input file for TiRiFiC
                 # Make an empty fits file
                 #########################################################
-                rotfile(radi,vrot,sbr,z,len(radi))
-                deffile(outset,inset,defname,radi,vrot,sbr,inc,\
+                if (make_output):
+                    rotfile(radi,vrot,sbr,z,len(radi))
+                    deffile(outset,inset,defname,radi,vrot,sbr,inc,\
                         len(radi),condisp,z)
                 #########################################################
                 # Make new cube, folder for it, clear old files
                 #########################################################
-                make_cube = False
                 if (make_cube):
                     emptyfits(inset)
                     os.system("tirific deffile="+defname)
@@ -118,9 +122,9 @@ for inc in inc_list:
                     os.system("rm "+outset)
                     os.system("rm empty.fits Logfile.log")
                 #########################################################
-                os.system("mv "+defname+" VROT.png SBR.png "+fname)
+                    os.system("mv "+defname+" VROT.png SBR.png "+fname)
                 #os.system("mv "+defname+" "+fname)
-                os.system("cp RC.dat "+fname)
+                    os.system("cp RC.dat "+fname)
                 #########################################################
                 file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+" "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+" "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")
     os.system("rm RC.dat")
