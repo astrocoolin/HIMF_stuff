@@ -54,65 +54,91 @@ def Magcalc(vrot,Rd,RHI,mstar):
     dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
+    # Best fitting lines
     V0, foo  = curve_fit(func , m, V0_,sigma=dV0)
     rPE, foo = curve_fit(func3, m, rPE_,sigma=drPE)
     A, foo   = curve_fit(func2, m, A_,sigma=dA)
 
-    Mag = np.arange(-27.5,0.,0.001)
+    # Make parameters for all Magnitudes
+    Mag = np.arange(-25,0.,0.001)
     a=func2(Mag,*A)
-    vt=func(Mag,*V0)
+    vt_0=func(Mag,*V0)
     rt=Rd*func3(Mag,*rPE)
+
     if False:
         plt.plot(Mag,rt/Rd)
         plt.scatter(m,rPE_)
         plt.show()
 
+    # Optical Radius, also Slope from NIHAO 17 
     R_opt = (3.31+err(0.01))*Rd
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
-    # with new Alpha
-    for i in range(0,250):
-        Mag = np.arange(-27.5,0.,0.001)
-        vt=func(Mag,*V0)
+    for i in range(0,6):
+        # Make parameters for all Magnitudes
+        Mag = np.arange(-25,0.,0.001)
+        vt_0=func(Mag,*V0)
         rt=Rd*func3(Mag,*rPE)
-        
+       
+        # Outer edge, and half of it for the slope
         x2 = RHI * 2.
         x1 = RHI
-        vt_0 = vt
+        # Calculate rotation velocities at R_opt for all vt_0, rt
         vt = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
-        #plt.plot(Mag,vt)
-        #plt.show()
-      
+
         # Best guess for Magnitude based on vrot with other params
+        # Finds index of vt that most closely matches vrot and 
+        # that matches the Magnitude
         ind = np.argmin(abs(vt-vrot))
         Mag = round(Mag[ind],2)
         if len(np.array([a])) != 1.: a = a[ind]
-        print('1: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.round(vt[ind],2),"Mag:",Mag,'Alpha',np.round(a,5),'Max Possible',np.max(vt))
+        print('1: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.round(vt[ind],2),"Mag:",Mag,'Alpha',np.round(a,6),'Max Possible',np.max(vt))
 
-        #print('HERE:',Mag,'Vt guess',round(vt[ind],2),'actual vrot',vrot,'V0',vt_0[ind],'alpha',a,'starmass',np.log10(mstar))
-    
-        vt=func(Mag,*V0)
-        rt=Rd*func3(Mag,*rPE)
+        vt_0_plt = vt_0
+        rt_plt   = rt
+
+        vt = vt[ind]
+        rt = rt[ind]
+        vt_0 = vt_0[ind]
         
         a = np.arange(-0.04,0.4,0.0001)
-        a_plt = np.arange(-0.04,0.4,0.0001)
+        a_plt = a
+   
         slope1 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
         slope2 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-        slope1_log = np.log10(slope1[(slope1>0) & (slope2>0)])
-        slope2_log = np.log10(slope2[(slope2>0) & (slope1>0)])
-        slope = (slope1_log-slope2_log) / np.log10(2.)
-    
+        slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
+        slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
+        a = a[(slope1 > 0) & (slope2 > 0)]
+        slope = (slope1_log-slope2_log) / (np.log10(x2)-np.log10(x1))
+        print(len(a),len(slope))
         a = a[np.argmin(abs(slope - slope_sparc))]
+
+   #     slope1 = np.zeros_like(a)*9E9
+   #     slope2 = np.zeros_like(a)*9E9
+   #     slope1_log = np.zeros_like(a)*9E9
+   #     slope2_log = np.zeros_like(a)*9E9
+   #     slope  = np.zeros_like(a)*9E9
+   #
+   #     for ind, value in enumerate(a):
+   #         slope1[ind] = ((1.-np.exp(-x2/rt))*(1.+a[ind]*x2/rt))
+   #         slope2[ind] = ((1.-np.exp(-x1/rt))*(1.+a[ind]*x1/rt))
+   #         if slope1[ind] > 0 and slope2[ind] >0:
+   #             slope1_log[ind] = np.log10(slope1[ind])
+   #             slope2_log[ind] = np.log10(slope2[ind])
+   #             slope[ind] = (slope1_log[ind]-slope2_log[ind]) / (np.log10(x2)-np.log10(x1))
     
-        vt = vt_0[ind] * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
-        vtest = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
+   #     a = a[np.argmin(abs(slope - slope_sparc))]
+    
+        vt = vt_0 * ( 1. - np.exp(-R_opt/rt) ) * ( 1. + a * R_opt/rt )
+        vtest = vt_0_plt * ( 1. - np.exp(-R_opt/rt_plt) ) * ( 1. + a * R_opt/rt_plt )
+        #print(len(rt),len(vt_0))
         #print('HERE: adjusted vt',vt,'adjusted a',a,'best slope',slope[np.argmin(abs(slope[np.isfinite(slope)] - slope_sparc))],'real slope',slope_sparc)
-        print('2: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.float(np.round(vt,2)),"Mag:",Mag,'Alpha',np.round(a,2))
+        print('2: Target Vrot:',np.round(vrot,2),'Current Vrot:',np.float(np.round(vt,2)),"Mag:",Mag,'Alpha',np.round(a,6))
     if True:
-            Mag_plt = np.arange(-27.5,0.,0.001)
+            Mag_plt = np.arange(-25,0.,0.001)
             plt.plot(Mag_plt[np.argmax(vtest):],vtest[np.argmax(vtest):])
-            plt.plot(Mag_plt[np.argmax(vtest):],vt_0[np.argmax(vtest):])
+            plt.plot(Mag_plt[np.argmax(vtest):],vt_0_plt[np.argmax(vtest):])
             plt.show()
     if False:
             plt.plot(a_plt[(slope1>0) & (slope2>0)],slope)
