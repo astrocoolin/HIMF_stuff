@@ -10,19 +10,16 @@ import os
 def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
+    cube_in = hdulist[0].data
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
-    
     print('------------------')
-
-    #print(ba,' beams across Semi-Major axis')
     fwhm = 2.*np.sqrt(2.*np.log(2.))        #FWHM  = 2.355* sigma
     bmaj_fwhm = 7.5 #pixels; #30 arcsecond beam
     bmaj_sigma  = bmaj_fwhm / fwhm
-    print('Semi-Major axis: ',round(rmax,2),' arcseconds,',round(rmax/delt,2),' pixels')
+    print('Diameter: ',round(rmax,2),' arcseconds,',round(rmax/delt,2),' pixels')
     print('BMAJ: (FWHM) ',round(bmaj_fwhm*delt,2),' arcseconds,',round(bmaj_fwhm,2),' pixels')
     gauss = Gaussian2DKernel(bmaj_sigma)
-    print 
     print('Calculating Noise level')
     sn_np=np.array([])
     nfrac = 0.1
@@ -40,9 +37,9 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     print('PSF convolution')
     for vel in range(0,cube.shape[0]):
         if  np.size(cube[vel,(cube[vel,:,:]) > nfrac*cube[:,:,:].max()]) > 0:
-            cube[vel,:,:]=b_math(cube[vel,:,:],noise,gauss)
+            cube[vel,:,:]=cube[vel,:,:]#b_math(cube[vel,:,:],noise,gauss)
         else:
-            cube[vel,:,:]=b_math(np.zeros_like(cube[vel,:,:]),noise,gauss)
+            cube[vel,:,:]=cube[vel,:,:]#b_math(np.zeros_like(cube[vel,:,:]),noise,gauss)
  
     
     prihdr = hdulist[0].header
@@ -51,14 +48,14 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     prihdr['CUNIT1']= 'DEGREE'
     prihdr['CUNIT2']= 'DEGREE'
     prihdr['CUNIT3']= 'M/S'
-    prihdr['BMAJ']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
-    prihdr['BMIN']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
+    prihdr['BMAJ']  =    0#(bmaj_fwhm)*delt_d # pixels * degrees/pixel
+    prihdr['BMIN']  =    0#(bmaj_fwhm)*delt_d # pixels * degrees/pixel
     prihdr['COMMENT'] = 'SN:'+str(sn)
     prihdr['COMMENT'] = 'Beams Across: '+str(ba)
     prihdr['COMMENT'] = 'Inclination:  '+str(inc)
     prihdr['COMMENT'] = 'Mass: '+str(mass)
 
-    hdu = fits.PrimaryHDU(cube,header=prihdr)
+    hdu = fits.PrimaryHDU(cube_in,header=prihdr)
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 

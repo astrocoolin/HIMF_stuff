@@ -47,20 +47,20 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\n\nRADI=")
     for i in range(0,len(vrot_str)):
         file.write(' +')
-        file.write('%E' % Decimal(radi[i]))
+        file.write('{:.3e}'.format(radi[i]))
     file.write("\n\nVROT=")
     for i in range(0,len(vrot_str)):
         file.write(' +')
-        file.write('%E' % Decimal(vrot[i]))
+        file.write('{:.3e}'.format(vrot[i]))
     file.write("\n\nSBR=")
     file.write('0.000000E+00')
     for i in range(1,len(vrot_str)):
         file.write(' +')
-        file.write('%E' % Decimal(sbr[i]))
+        file.write('{:.3e}'.format(sbr[i]))
     file.write("\n\nZ=")
     for i in range(0,len(vrot_str)):
         file.write(' +')
-        file.write('%E' % Decimal(z[i]))
+        file.write('{:.3e}'.format(z[i]))
     file.write("\nINCL= +"+str(float(inc)))
     file.write("\nPA= +4.50000E+01")
     file.write("\nXPOS= +2.77675430E+02")
@@ -70,7 +70,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nCONDISP=0")
     file.write("\nLTYPE= 3")
     file.write("\n")
-    file.write("\nCFLUX=1E-5") 
+    file.write("\nCFLUX=1E-6") 
     file.write("\nPENALTY= 0")
     file.write("\nWEIGHT= 0 ")
     file.write("\nRADSEP= 0.1 ")
@@ -148,8 +148,6 @@ DTYPE3  = 'VELO              ' / SECONDARY AXIS NAME                            
 DUNIT3  = 'M/S               ' / SECONDARY AXIS UNITS                           \
 EPOCH   =   2.000000000000E+03 / EPOCH                                          \
 INSTRUME= 'WSRT              ' / INSTRUMENT                                     \
-BMMAJ   = 0.35913645070246D+02                                                  \
-BMMIN   = 0.23912432616063D+02                                                  \
 SUBTR   =                    0 /SOURCE SUBTRACTION                              \
 CHANEND =                   51 / last usable continuum channel                  \
 UVCDT   = 'NORMAL     '        /UV COORDINATE TYPE                              \
@@ -201,7 +199,7 @@ def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist):
 def rotfile(radi,vrot,sbr,z,END):
     fille = open('RC.dat','a')
     #fille.write("#RAD \t VROT \t \t SBR \t \t Z \n")
-    fille.write("#RAD \tVROT \t \tSBR \t \t \tZ \n")
-    fille.write("#(\") \t(km/s) \t\t(Jy km s^-1 as^-2) \t(kpc) \n")
+    fille.write("#RAD \t\tVROT \t \tSBR \t \t \tZ \n")
+    fille.write("#(\") \t\t(km/s) \t\t(Jy km s^-1 as^-2) \t(kpc) \n")
     for i in range(1,END):
-        fille.write(str(radi[i])+'\t'+str('{:.3E}'.format(vrot[i]))+'\t'+str('{:.3E}'.format(sbr[i]))+'\t'+'\t'+str('{:.3E}'.format(z[i]))+'\n')
+        fille.write(str('{:.3e}'.format(radi[i]))+'\t'+str('{:.3E}'.format(vrot[i]))+'\t'+str('{:.3E}'.format(sbr[i]))+'\t'+'\t'+str('{:.3E}'.format(z[i]))+'\n')

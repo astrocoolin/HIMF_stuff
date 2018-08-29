@@ -1,130 +1,131 @@
 #!/usr/bin/env python3
 import numpy as np
 import os
+from pathlib import Path
+import json
+
 from science import first_beam
 from Input_output import  deffile, rotfile, emptyfits, rothead
-from pathlib import Path
-
 from relations import *
+
 #########################################################
 # Setting constants: KPC, MPC scales, central SB
 # Delta is the increment range in arcseconds
 #########################################################
-make_output = False
-make_cube = False
 pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
-delta = 5.
+
+with open('config.json') as f:
+    params = json.load(f)
+
+make_cube   = params["Make_Cube"]
+make_output = params["Make_Output"]
+make_folder = params["Make_Folder"]
+
+if make_folder == False:
+    print("No output files being created.")
+    make_output = False
+    make_cube = False
+
 #########################################################
 # Ranges of all of the parameters to be varied
 # # beams, inclination, magnitude, S/N ratio
 #########################################################
 
-beam_list  = [3.,4.,5.,6.,7.,8.,12.,16.,18.]
-inc_list   = [5.,25.,45.,65.,85.]
-mass_list  = np.arange(5.,10.6,0.5)#[5.,5.5,6.,6.5,7.,7.5,8.,8.5,9.,9.5,10.,10.5]
-sn_list    = [16.,8.,4.,2.]
+delta     = np.float32(params["delta"])
+inc_list  = np.float32(params["incs"])
+mass_list = np.float32(params["masses"])
+beam_list = np.float32(params["beams"])
+sn_list   = np.float32(params["sn"])
 
-beam_list  = [32.]
-inc_list   = [80.]
-mass_list  = [10.]
-sn_list    = [16.]
-
-catalog = 'sample_10.txt'
-file = open(catalog,'w')
-
-file.write("mass "+"RHI "+ "Mag "+"Alpha "+"Vmax "+"Vflat "+"Mstar "+"slope "+" rd"+" rPE"+"\n")
+if params["Ranges"]:
+    mass_list = np.arange(mass_list[0],mass_list[1],mass_list[2])
+    
+#########################################################
+print('Parameter Range:\n')
 print('beams:',beam_list)
 print('mass:',mass_list)
 print('inc:',inc_list)
-print('sn:',sn_list)
+print('snr:',sn_list)
+#########################################################
+catalog = 'sample.txt'
+file = open(catalog,'w')
+file.write("mass "+"RHI "+ "Mag "+"Alpha "+"Vmax "+\
+        "Vflat "+"Mstar "+"slope "+" rd"+" rPE"+"\n")
 #########################################################
 # Main loop
 #########################################################
 for inc in inc_list:
-    for i, mass in enumerate(mass_list):
+    for beams in beam_list:
         for snr in sn_list:
-            for beams in beam_list:
-                #print('inc:',[inc])
-                #print('mass:',[mass])
-                #print('snr:',[snr])
-                #print('beams:',[beams])
-                #########################################################
+            for i, mass in enumerate(mass_list):
+                print('\nThis Galaxy:\n')
+                print('beams:',[beams])
+                print('inc:',[inc])
+                print('mass:',[mass])
+                print('snr:',[snr])
+                ######################################################################
                 # Names of files
-                #########################################################
+                ######################################################################
                 defname ="cube_input.def"
                 inset   ='empty.fits'
                 outset  ='Cube_base.fits'
                 outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
-                    str(inc)+".SN_"+str(snr)+'.fits'
+                        str(inc)+".SN_"+str(snr)+'.fits'
                 fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
-                    str(inc)+".SN_"+str(snr)
-                #########################################################
-                # Scaling everything in terms of arcseconds instead of
-                # in terms of kilparsecs; divide by distance
-                #########################################################
-                radi,sbr,vrot,condisp,z,\
-                        MHI,DHI,Mag,dist,alpha,vflat,\
-                        Mstar,slope,rd,rPE =\
-                        setup_relations(mass,beams,delta)
-                #sbr = sbr * 0.5E-2
-                #########################################################
-                #print('------------------')
-                #print('dist [kpc]:',        round(dist,2))
-                #print('sdisp[km/s]:',     round(condisp,2))
-                #print('------------------')
-                #########################################################
-                # Set the radii, rotation curve, surface brightness
-                # profile
-                #print(len(radi),min(radi),max(radi))
-                radi = radi / (dist) * 3600. * (180./np.pi)
-                #def rotfile(radi,vrot,sbr,END):
-                ########################################################
-                #radi=np.arange(0.,outside+delta,delta)
-                #vrot=make_vrot(radi,mag,hr)
-                #sbr=make_sbr(radi,IO,hr,edge)
-                #########################################################
-                filecheck = Path('empty.fits')
-                if filecheck.is_file(): os.system("rm empty.fits")
-                filecheck = Path('Logfile.log')
-                if filecheck.is_file(): os.system("rm Logfile.log")
-                filecheck = Path('outname')
-                if filecheck.is_file(): os.system("rm "+outname)
-                filecheck = Path('defname')
-                if filecheck.is_file(): os.system("rm "+defname)
-                #########################################################
+                        str(inc)+".SN_"+str(snr)
+                ######################################################################
+                # Use scaling relations to set up the galaxy
+                ######################################################################
+                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
+                        Mstar,slope,rd,rPE = \
+                        setup_relations(mass,beams,delta,make_output)
+                ######################################################################
+                # Set the radii, rotation curve, surface brightness prof
+                radi = radi     / (dist) * 3600. * (180./pi)
+                END  = DHI      / (dist) * 3600. * (180./pi)
+                ######################################################################
                 # Make a file containing the rotation curve and SBP
-                # Make an input file for TiRiFiC
-                # Make an empty fits file
-                #########################################################
+                # Make an input file for TiRiFiC, make an empty FITS file
+                ######################################################################
                 if (make_output):
+                    filecheck = Path('defname')
+                    if filecheck.is_file(): os.system("rm "+defname)
+
                     rotfile(radi,vrot,sbr,z,len(radi))
                     deffile(outset,inset,defname,radi,vrot,sbr,inc,\
                         len(radi),condisp,z)
-                #########################################################
+                ######################################################################
                 # Make new cube, folder for it, clear old files
-                #########################################################
+                ######################################################################
                 if (make_cube):
+                    filecheck = Path('outname')
+                    if filecheck.is_file(): os.system("rm "+outname)
+                    filecheck = Path('empty.fits')
+                    if filecheck.is_file(): os.system("rm empty.fits")
+                    filecheck = Path('Logfile.log')
+                    if filecheck.is_file(): os.system("rm Logfile.log")
+
                     emptyfits(inset)
                     os.system("tirific deffile="+defname)
                     print("Cube finished")
-                #########################################################
-                if (make_cube):
+                ######################################################################
+                if (make_folder):
                     filecheck = Path(fname)
-                    if filecheck.is_dir (): os.system("rm -r "+fname)
+                    if filecheck.is_dir (): 
+                        os.system("rm -r "+fname)
+                        print("Refreshed folder")
                     os.system("mkdir "+fname)
-                    #print("Refreshed folder")
-                #########################################################
+                    os.system("mv "+defname+" VROT.png SBR.png RC.dat "+fname)
+                ######################################################################
                 if (make_cube):
-                    first_beam(outset,outname,DHI/2.,beams,snr,inc,mass)
+                    first_beam(outset,outname,END,beams,snr,inc,mass)
                     os.system("mv "+outname+" "+fname)
                     os.system("rm "+outset)
                     os.system("rm empty.fits Logfile.log")
-                #########################################################
-                    os.system("mv "+defname+" VROT.png SBR.png "+fname)
-                #os.system("mv "+defname+" "+fname)
-                    os.system("cp RC.dat "+fname)
-                #########################################################
-                file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+" "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+" "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")
-    os.system("rm RC.dat")
+                ######################################################################
+                #os.system('eog '+fname+'/VROT.png')
+                file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+\
+                        " "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+\
+                        " "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")

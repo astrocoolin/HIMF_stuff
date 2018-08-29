@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib as mpl
-import scipy as sp
-#mpl.use('Agg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
 from scipy import integrate
 from Input_output import rothead
-
-sp.special.seterr()
-
 
 def func(x,a,b,c,d):
     # Fit for V0
@@ -31,19 +27,15 @@ def make_vrot(radi,Mag,Ropt,alpha):
     # https://arxiv.org/abs/astro-ph/0512051
     V0 = np.array([275.,255.,225.,200.,170.,148.,141.,122.,103.,85.])
     dV0 = np.array([6.,2.,1.,1.,1.,2.,2.,2.,2.,5.])
-    A=np.array([0.008,0.002,0.003,0.002,0.011,0.022,0.010,0.020,0.029,0.019])
-    dA = np.array([0.003,0.001,0.001,0.001,0.001,0.002,0.003,0.005,0.005,0.015])
     rPE = np.array([0.126,0.132,0.149,0.164,0.178,0.201,0.244,0.261,0.260,0.301])
     drPE = np.array([0.007,0.003,0.003,0.002,0.003,0.004,0.005,0.008,0.008,0.002])
     m=np.array([-23.76,-23.37,-22.98,-22.60,-22.19,-21.80,-21.41,-21.02,-20.48,-19.38])
 
     V0, foo = curve_fit(func, m, V0,sigma=dV0)
     rPE,foo = curve_fit(func3, m, rPE,sigma=drPE)
-    A, foo  = curve_fit(func2, m, A,sigma=dA)
-
     vt=func(Mag,*V0)
-    a=func2(Mag,*A)
     rt=Ropt*func3(Mag,*rPE) 
+    a = alpha
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),rt
 
@@ -72,17 +64,6 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     a=func2(Mag,*A)
     vt_0=func(Mag,*V0)
     rt=Ropt*func3(Mag,*rPE)
-
-    if True:
-        plt.figure(1)
-        plt.plot(Mag,np.log10(vt_0))
-        plt.scatter(m,np.log10(V0_))
-
-        plt.figure(2)
-        plt.plot(Mag,np.log10(rt/Ropt))
-        plt.scatter(m,np.log10(rPE_))
-        plt.show()
-
 
     # Set slope from NIHAO 17 
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
@@ -127,6 +108,7 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     vt_1  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_1)-np.log10(vt_2))/(np.log10(x2)-np.log10(x1))
+    print(slope,slope_sparc)
 
     return Mag,a,slope
 
@@ -148,7 +130,6 @@ def sbr_calc(radi,RHI,x,dx,vt,Rs):
     sbr = sbr/sbr[R_HI]
     return sbr
 
-
 def make_sbr(radi,Rs,DHI,vt,mass):
     # Make the surface brightness profile
     RHI=DHI/2.
@@ -166,8 +147,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
-    print(np.log10(mass),np.log10(Mass_guess))
-    
+
     return sbr
 
 def make_z(radi,vrot,sigma):
@@ -179,7 +159,6 @@ def make_z(radi,vrot,sigma):
             z[i] = sigma / ( np.sqrt(2./3.) * vrot[1]/radi[1])
     return  z
 
-
 def err(errbar):
     return errbar*(np.random.random()*2. - 1.)
 
@@ -187,11 +166,12 @@ def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
     return np.log(10.) *phi_0* (MHI/Mstar)**(alpha+1.) * np.exp(-MHI/Mstar)
 
-def DHI_calc(MHI, slope,const):
+def DHI_calc(MHI, slope,const,scatr):
     #Diameter-Mass relation
     slope = slope[0] + err(slope[1])
-    const = const[0] + err(const[1])
-    return 10.**(slope*np.log10(MHI)+const)
+    const = const[0] + err(const[1]) + err(scatr)
+    DHI = 10.**(slope*np.log10(MHI)+const)
+    return DHI
 
 def Mstar_calc(Mgas,slope,const,split,scatr):
     #Stellar Mass calculator
@@ -226,7 +206,7 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return 10.**(const + slope * np.log10(v))
 
-def setup_relations(mass,beams,ring_thickness):
+def setup_relations(mass,beams,ring_thickness,make_plots):
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -236,6 +216,7 @@ def setup_relations(mass,beams,ring_thickness):
 
     ######################################################
     # Martin et al 2010 
+    # HI Mass function
     # https://arxiv.org/abs/1008.5107
     phi_0           = 0.0048 #\pm 0.3E-3
     Mstar           = 10.**9.96 #\pm 0.02 dex
@@ -245,15 +226,17 @@ def setup_relations(mass,beams,ring_thickness):
 
     ######################################################
     # Jing Wang, Koribalski, et al 2016
+    # HI Mass - Diameter relationship
     # https://arxiv.org/abs/1605.01489
     slope = np.array([0.506,0.003])
     const = np.array([-3.293,0.009])
-    scatter = 0.06 #dex
-    DHI = DHI_calc(MHI,slope, const)
+    scatr = 0.06 #dex
+    DHI = DHI_calc(MHI,slope, const,scatr)
     # kpc
 
     ######################################################
     # Bradford et al 2015, Fig 5
+    # HI Mass - Stellar Mass Relationship
     # https://arxiv.org/abs/1505.04819
     split           = 9.2832
     Mgas            = MHI * 1.4
@@ -266,6 +249,7 @@ def setup_relations(mass,beams,ring_thickness):
 
     ######################################################
     # Bradford et al 2015, Fig 6
+    # Baryonic Tully-Fisher relationship
     # https://arxiv.org/abs/1505.04819
     slope = np.array([0.277,0.004])
     const = np.array([-0.672,0.041])
@@ -275,19 +259,20 @@ def setup_relations(mass,beams,ring_thickness):
 
     ######################################################
     # Jing et al 2014
-    # https://arxiv.org/abs/1401.8164
     # HI scale length = 0.18 RHI
+    # https://arxiv.org/abs/1401.8164
     Rs = (DHI/2.)*0.18
     # kpc
 
     ######################################################
     # Saintonge et al 2007
+    # Optical Radius (r83) - Vflat Relationship
     # https://arxiv.org/abs/0710.0760
     slope = np.array([0.56,0.04])
     const = np.array([-0.36,0.08])
     scatr = np.array([0.16])
     Ropt = expdisk(vflat,slope,const,scatr)
-    # Ropt I-band
+    # R_opt I-band
 
     #####################################################
     # Calculating Magnitude from vmax
@@ -297,14 +282,14 @@ def setup_relations(mass,beams,ring_thickness):
     # I-band mag
     #####################################################
     # Compute radial sampling cadence
-    dist  = DHI / (4.*beams * (np.pi/162000.))
-    dist  = dist * u.kpc
-    print(dist)
-    delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))* u.kpc
-    print(delta)
+    dist  = DHI * 21600. / (beams*np.pi)
+
+    delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
+    #####################################################
     # Compute radi, rotation curve, surface brightness profile
-    radi     = np.arange(0.,DHI,delta/u.kpc)
+    radi     = np.arange(0.,DHI+1,delta)
     vrot,rPE = make_vrot(radi,Mag,Ropt,alpha)
+    #####################################################
     # Convert SBR to mJy
     sbr      = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,vflat,mass)
     #####################################################
@@ -317,23 +302,49 @@ def setup_relations(mass,beams,ring_thickness):
     z    = make_z(radi,vrot,Vdisp)
     #####################################################
    
-    make_plots = False
     if (make_plots):
-        plt.figure(1)
-        plt.title(str(np.log10(mass))+' dex M$_{\odot}$')
+        label_size=21.5
+        lw=1.5
+        mpl.rcParams['xtick.labelsize'] = label_size
+        mpl.rcParams['ytick.labelsize'] = label_size
+        mpl.rcParams['lines.linewidth'] = 3
+        mpl.rcParams['xtick.major.size'] = 10
+        mpl.rcParams['xtick.major.width'] = lw
+        mpl.rcParams['xtick.minor.size'] = 5
+        mpl.rcParams['xtick.minor.width'] = lw
+        mpl.rcParams['ytick.major.size'] = 10
+        mpl.rcParams['ytick.major.width'] = lw
+        mpl.rcParams['ytick.minor.size'] = 5
+        mpl.rcParams['ytick.minor.width'] = lw
+        mpl.rcParams['axes.linewidth'] = lw
+        mpl.rcParams['font.monospace'] = 'Courier'
+        mpl.rcParams['legend.scatterpoints'] = '3'
+        mpl.rcParams['mathtext.default'] = 'regular'
+        mpl.rcParams['xtick.direction'] = 'in'
+        mpl.rcParams['ytick.direction'] = 'in'
+
+        fig, ax = plt.subplots(figsize=(20, 10))
+        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
         plt.semilogy(radi,sbr)
-        plt.xlabel('R [kpc]')
-        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]')
+        plt.xlabel('R [kpc]',fontsize=label_size)
+        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]',fontsize=label_size)
         plt.axvline(DHI/2.)
-        plt.savefig('SBR.png')
-        plt.close(1)
-        plt.figure(2)
-        plt.title(str(np.log10(mass))+' dex M$_{\odot} HI$\n'+str(round(np.log10(Mbar),3))+' dex M$_{\odot} Mstar$')
+        minorLocator = mpl.ticker.AutoMinorLocator()
+        ax.xaxis.set_minor_locator(minorLocator)
+        plt.savefig('SBR.png',bbox_inches='tight')
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(20, 10))
+        #plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+' \n'+'log$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
+        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3))+';\t$\Delta$log(V)/$\Delta$log(R) = '+str(round(slope,5)),fontsize=label_size)
         plt.plot(radi,vrot)
-        plt.xlabel('R [kpc]')
-        plt.ylabel('Vc [km/s]')
+        plt.xlabel('R [kpc]',fontsize=label_size)
+        plt.ylabel('Vc [km/s]',fontsize=label_size)
         plt.axvline(DHI/2.)
-        plt.savefig('VROT.png')
-        plt.close(2)
+        minorLocator = mpl.ticker.AutoMinorLocator()
+        ax.xaxis.set_minor_locator(minorLocator)
+        ax.yaxis.set_minor_locator(minorLocator)
+        plt.savefig('VROT.png',bbox_inches='tight')
+        plt.close()
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE
