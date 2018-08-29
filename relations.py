@@ -335,6 +335,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         plt.close()
 
         fig, ax = plt.subplots(figsize=(20, 10))
+
         #plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+' \n'+'log$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
         plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3))+';\t$\Delta$log(V)/$\Delta$log(R) = '+str(round(slope,5)),fontsize=label_size)
         plt.plot(radi,vrot)
