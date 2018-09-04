@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import json
 
-from science import first_beam
+from science import first_beam, second_beam
 from Input_output import  deffile, rotfile, emptyfits, rothead
 from relations import *
 
@@ -120,7 +120,7 @@ for inc in inc_list:
                     os.system("mv "+defname+" VROT.png SBR.png RC.dat "+fname)
                 ######################################################################
                 if (make_cube):
-                    first_beam(outset,outname,END,beams,snr,inc,mass)
+                    second_beam(outset,outname,END,beams,snr,inc,mass)
                     os.system("mv "+outname+" "+fname)
                     os.system("rm "+outset)
                     os.system("rm empty.fits Logfile.log")
