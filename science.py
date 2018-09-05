@@ -33,7 +33,10 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
 
     signal = np.mean(sn_np[:])
     noise = signal / sn
-    noise = noise * 7.5 * (2. / fwhm) * np.sqrt(np.pi)
+    noise = noise * 2.*np.sqrt(np.pi)* bmaj_sigma
+
+    print('Noise:',noise)
+    print('Signal:',signal)
     
     print('PSF convolution')
     for vel in range(0,cube.shape[0]):
@@ -81,13 +84,15 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass):
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
 
-    print('Signal [Jy km arcsec]',mean_signal)
+    print('Signal',mean_signal)
     noise = mean_signal/sn
 
-    pixarea=np.pi * 7.5 * (2. /fwhm)
+    pixarea=np.pi * bmaj_sigma **2.* 2.
     # idk 
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
-    print(noisescl,pixarea)
+    print('Noise',noisescl)
+
+    print(noisescl,pixarea,fwhm)
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
 
