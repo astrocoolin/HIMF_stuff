@@ -289,7 +289,9 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Compute radial sampling cadence
     # 30 arcseconds to radians, small angle apprx
-    dist  = DHI * 21600. / (beams*np.pi)
+    #dist  = DHI * 21600. / (beams*np.pi)
+    dist  = DHI * 32400. / (beams*np.pi)
+    dist = 16.27*1000
 
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################

@@ -71,15 +71,18 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
     print('------------------')
+    #print(30./delt)
+    beam = 20./delt
+    #beam = 7.5
 
     fwhm = 2.*np.sqrt(2.*np.log(2.))        #FWHM  = 2.355* sigma
-    bmaj_fwhm = 7.5 #pixels; #30 arcsecond beam
+    bmaj_fwhm = beam #pixels; #30 arcsecond beam
     bmaj_sigma  = bmaj_fwhm / fwhm
     print('Diameter: ',round(rmax,2),' arcseconds,',round(rmax/delt,2),' pixels')
     print('BMAJ: (FWHM) ',round(bmaj_fwhm*delt,2),' arcseconds,',round(bmaj_fwhm,2),' pixels')
     gauss = Gaussian2DKernel(bmaj_sigma)
     print('Calculating Noise level')
-
+    cflux_min = 10E-5
     cutoff = np.mean(cube[cube>cflux_min])/(4*np.sqrt(np.pi)*bmaj_sigma)
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
@@ -113,8 +116,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-    test=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*7.5**2.)/(4.*np.log(2.)))
-    print("Integrated Cube to Mass [3D]",'Signal:','{:.3f}'.format(np.log10(test)))
+    test=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*beam**2.)/(4.*np.log(2.)))
+    print("Integrated Cube to Mass [3D]",'Signal:','{:.3f}'.format(np.log10(test)),test)
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel
