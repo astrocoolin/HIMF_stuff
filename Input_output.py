@@ -9,7 +9,7 @@ import os
 import datetime
 
 
-def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
+def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
     logname='Logfile.log'
     
     file = open(defname,"w") 
@@ -26,7 +26,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nPROGRESSLOG=")
     file.write("\nTEXTLOG=")
     file.write("\n")
-    file.write("\nRMS= 1.00000e-5")
+    file.write("\nRMS= 1.00000e-10")
     file.write("\nBMAJ=0")
     file.write("\nBMIN=0")
     file.write("\nBPA=0")
@@ -70,7 +70,8 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z):
     file.write("\nCONDISP=0")
     file.write("\nLTYPE= 3")
     file.write("\n")
-    file.write("\nCFLUX=1E-4") 
+    file.write("\nCFLUX=")
+    file.write('{:.3e}'.format(cflux)) 
     file.write("\nPENALTY= 0")
     file.write("\nWEIGHT= 0 ")
     file.write("\nRADSEP= 0.1 ")

@@ -63,7 +63,7 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-def second_beam(outset,outname,rmax,ba,sn,inc,mass):
+def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     cube_in = hdulist[0].data
@@ -80,22 +80,20 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass):
     gauss = Gaussian2DKernel(bmaj_sigma)
     print('Calculating Noise level')
 
-    cutoff = np.mean(cube[cube>1.0e-5])/(4*np.sqrt(np.pi)*bmaj_sigma)
+    cutoff = np.mean(cube[cube>cflux_min])/(4*np.sqrt(np.pi)*bmaj_sigma)
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
 
-    print('Signal',mean_signal)
+    print('Signal:','{:.3e}'.format(mean_signal))
     noise = mean_signal/sn
 
     pixarea=np.pi * bmaj_sigma **2.* 2.
     # idk 
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
-    print('Noise',noisescl)
+    print('Noise :','{:.3e}'.format(noisescl))
 
-    print(noisescl,pixarea,fwhm)
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
-
     cube = cube*pixarea
 
     prihdr = hdulist[0].header
@@ -114,9 +112,9 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass):
     hdu = fits.PrimaryHDU(cube,header=prihdr)
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
-    
 
-
+    test=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*7.5**2.)/(4.*np.log(2.)))
+    print("Integrated Cube to Mass [3D]",'Signal:','{:.3f}'.format(np.log10(test)))
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

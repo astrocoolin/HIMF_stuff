@@ -39,8 +39,15 @@ mass_list = np.float32(params["masses"])
 beam_list = np.float32(params["beams"])
 sn_list   = np.float32(params["sn"])
 
-if params["Ranges"]:
+iters = params["Ranges"]
+if 'masses' in iters:
     mass_list = np.arange(mass_list[0],mass_list[1],mass_list[2])
+if 'incs' in iters:
+    inc_list = np.arange(inc_list[0],inc_list[1],inc_list[2])
+if 'beams' in iters:
+    beam_list = np.arange(beam_list[0],beam_list[1],beam_list[2])
+if 'sn' in iters:
+    sn_list = np.arange(sn_list[0],sn_list[1],sn_list[2])
     
 #########################################################
 print('Parameter Range:\n')
@@ -79,12 +86,8 @@ for inc in inc_list:
                 # Use scaling relations to set up the galaxy
                 ######################################################################
                 radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
-                        Mstar,slope,rd,rPE = \
+                        Mstar,slope,rd,rPE,cflux,END = \
                         setup_relations(mass,beams,delta,make_output)
-                ######################################################################
-                # Set the radii, rotation curve, surface brightness prof
-                radi = radi     / (dist) * 3600. * (180./pi)
-                END  = DHI      / (dist) * 3600. * (180./pi)
                 ######################################################################
                 # Make a file containing the rotation curve and SBP
                 # Make an input file for TiRiFiC, make an empty FITS file
@@ -95,7 +98,7 @@ for inc in inc_list:
 
                     rotfile(radi,vrot,sbr,z,len(radi))
                     deffile(outset,inset,defname,radi,vrot,sbr,inc,\
-                        len(radi),condisp,z)
+                        len(radi),condisp,z,cflux)
                 ######################################################################
                 # Make new cube, folder for it, clear old files
                 ######################################################################
@@ -120,9 +123,8 @@ for inc in inc_list:
                     os.system("mv "+defname+" VROT.png SBR.png RC.dat "+fname)
                 ######################################################################
                 if (make_cube):
-                    second_beam(outset,outname,END,beams,snr,inc,mass)
-                    os.system("mv "+outname+" "+fname)
-                    os.system("rm "+outset)
+                    second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.)
+                    os.system("mv "+outname+" "+outset+" "+fname)
                     os.system("rm empty.fits Logfile.log")
                 ######################################################################
                 #os.system('eog '+fname+'/VROT.png')

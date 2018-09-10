@@ -108,7 +108,6 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     vt_1  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_1)-np.log10(vt_2))/(np.log10(x2)-np.log10(x1))
-    print(slope,slope_sparc)
 
     return Mag,a,slope
 
@@ -136,7 +135,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     x=0.36
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.045,-0.03,0.001)
+    delta = np.arange(-0.085,0.0851,0.001)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
@@ -146,7 +145,14 @@ def make_sbr(radi,Rs,DHI,vt,mass):
 
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
-    Mass_guess = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
+    Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
+    print('Guess','{:.3f}'.format(np.log10(Mass_guess)),'Mass','{:.3f}'.format(np.log10(mass)))
+    print('dx=',dx,'and sigma=',0.36+dx)
+    if round(dx,3) <= -0.085 or round(dx,3) >= 0.085:
+        while True:
+            print("FAILURE",dx,0.36+dx)
+            stop
+
 
     return sbr
 
@@ -282,6 +288,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # I-band mag
     #####################################################
     # Compute radial sampling cadence
+    # 30 arcseconds to radians, small angle apprx
     dist  = DHI * 21600. / (beams*np.pi)
 
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
@@ -290,8 +297,20 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     radi     = np.arange(0.,DHI+1,delta)
     vrot,rPE = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
-    # Convert SBR to mJy
-    sbr      = (1./dist)*(1/0.236)*make_sbr(radi,Rs,DHI,vflat,mass)
+    # Convert SBR to Jy
+    print('Dist','{:.3f}'.format(dist),'kpc')
+    sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
+    print('Integrated Mass         [1D]:','{:.3f}'.format(np.log10(integrate.simps(2*np.pi*sbr*radi,radi)*1000.**2.)))
+    #sbr      = (3600./(0.236*dist**2.))*sbr
+    sbr = sbr * 1.24756e+20
+    conv_column_arsec=605.7383*1.823E18*(2.*np.pi/(np.log(256.)))
+    sbr = sbr/(conv_column_arsec*1000.)
+    #####################################################
+    # Set the radii, rotation curve, surface brightness prof
+    radi = radi     / (dist) * 3600. * (180./np.pi)
+    END  = DHI      / (dist) * 3600. * (180./np.pi)
+    print('Integrated Flux to Mass [1D]:','{:.3f}'.format(np.log10((0.236*dist**2.)*integrate.simps(2*np.pi*sbr*radi,radi))))
+    cflux = np.sum(sbr / 1.0E5)
     #####################################################
     # Velocity dispersion 8km/s
     # Constant for now.
@@ -300,7 +319,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
     Vdisp = 8.
     z    = make_z(radi,vrot,Vdisp)
-    #####################################################
+    ###############################################
    
     if (make_plots):
         label_size=21.5
@@ -327,7 +346,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
         plt.semilogy(radi,sbr)
         plt.xlabel('R [kpc]',fontsize=label_size)
-        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-1}$]',fontsize=label_size)
+        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-2}$]',fontsize=label_size)
         plt.axvline(DHI/2.)
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax.xaxis.set_minor_locator(minorLocator)
@@ -347,4 +366,4 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist)
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE
+    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END
