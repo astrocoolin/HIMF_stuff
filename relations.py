@@ -291,7 +291,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # 30 arcseconds to radians, small angle apprx
     #dist  = DHI * 21600. / (beams*np.pi)
     dist  = DHI * 32400. / (beams*np.pi)
-    dist = 16.27*1000
+    dist = 7.83*1000
 
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
@@ -319,7 +319,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # Use it to calculate disk thickness based on
     # Puche et al 1992
     # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
-    Vdisp = 8.
+    Vdisp = 13.
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
    

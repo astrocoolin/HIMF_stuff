@@ -72,7 +72,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     delt = delt_d * 3600 # arcseconds / pixel
     print('------------------')
     #print(30./delt)
-    beam = 20./delt
+    beam = 15./delt
     #beam = 7.5
 
     fwhm = 2.*np.sqrt(2.*np.log(2.))        #FWHM  = 2.355* sigma
@@ -82,7 +82,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     print('BMAJ: (FWHM) ',round(bmaj_fwhm*delt,2),' arcseconds,',round(bmaj_fwhm,2),' pixels')
     gauss = Gaussian2DKernel(bmaj_sigma)
     print('Calculating Noise level')
-    cflux_min = 10E-5
+    cflux_min = 1E-5
     cutoff = np.mean(cube[cube>cflux_min])/(4*np.sqrt(np.pi)*bmaj_sigma)
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
