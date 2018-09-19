@@ -85,13 +85,9 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
 
-    print('Signal:','{:.3e}'.format(mean_signal))
     noise = mean_signal/sn
-
     pixarea=np.pi * bmaj_sigma **2.* 2.
-    # idk 
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
-    print('Noise :','{:.3e}'.format(noisescl))
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
@@ -114,8 +110,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-    test=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*beam**2.)/(4.*np.log(2.)))
-    print("Integrated Cube to Mass [3D]",'Signal:','{:.3f}'.format(np.log10(test)),test)
+    Mtest=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*beam**2.)/(4.*np.log(2.)))
+    print("Integrated Cube to Mass",'{:.3f}'.format(np.log10(Mtest)))
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

@@ -1,0 +1,14 @@
+{	
+	"Ranges":["masses"],
+
+	"Make_Folder":true,
+	"Make_Output":true,
+	"Make_Cube":false,
+
+	"beams": [2,4,6,8,16],
+	"incs": [60],
+	"masses": [6.0,10.5,0.1],
+	"sn":[8],
+
+	"delta":2.5
+}

@@ -183,7 +183,7 @@ END                                                                             
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)
 
-def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist):
+def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope):
     fille = open('RC.dat',"w")
     fille.write("#  Date = "+str(datetime.datetime.now())[0:10]+"\n")
     fille.write('#  Mag  = '+str(Mag)+'\n')
@@ -195,6 +195,7 @@ def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist):
     fille.write('#  Rs       [kpc] = '+str(round(Rs,2))+'\n')
     fille.write('#  Distance [kpc] = '+str('{:.2E}'.format(dist))+'\n')
     fille.write('#  DHI     [km/s] = '+str(round(DHI,2))+"\n")
+    fille.write('#  DlogV/DlogR    = '+str(round(slope,2))+"\n")
     fille.write('#  Rotation curve \n \n')
 
 def rotfile(radi,vrot,sbr,z,END):

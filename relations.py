@@ -146,8 +146,6 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    print('Guess','{:.3f}'.format(np.log10(Mass_guess)),'Mass','{:.3f}'.format(np.log10(mass)))
-    print('dx=',dx,'and sigma=',0.36+dx)
     if round(dx,3) <= -0.085 or round(dx,3) >= 0.085:
         while True:
             print("FAILURE",dx,0.36+dx)
@@ -197,7 +195,7 @@ def BTFR(Mbar,slope,const,scatr):
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])+err(scatr[0]+err(scatr[1]))
     logv = np.log10(Mbar) * slope + const
-    print("VELOCITY BRADFORD",10.**logv)
+    #print("VELOCITY BRADFORD",10.**logv)
     return 10.**(logv)
 
 def BTFR_2(Mgas,slope,const):
@@ -205,7 +203,7 @@ def BTFR_2(Mgas,slope,const):
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])
     logv = np.log10(Mgas) * 1./slope - const/slope
-    print("VELOCITY SPARC",10.**logv)
+    #print("VELOCITY SPARC",10.**logv)
     return 10.**(logv)
 
 def expdisk(v,slope,const,scatr):
@@ -253,6 +251,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
+    # From Sparc? (need source)
     if (False):
         split = 9.525
         slope = np.array([[0.712,0.],[0.276,0.]])
@@ -271,7 +270,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     const = np.array([-0.672,0.041])
     scatr = np.array([0.075,0.002])
     vflat = BTFR(Mbar,slope,const,scatr)
-    # This one is from SPARC
+    # This one is from SPARC (need source)
     if (False):
         slope = np.array([3.71,0.08])
         const = np.array([2.27,0.18])
@@ -313,9 +312,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     vrot,rPE = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
     # Convert SBR to Jy
-    print('Dist','{:.3f}'.format(dist),'kpc')
     sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
-    print('Integrated Mass         [1D]:','{:.3f}'.format(np.log10(integrate.simps(2*np.pi*sbr*radi,radi)*1000.**2.)))
     #sbr      = (3600./(0.236*dist**2.))*sbr
     sbr = sbr * 1.24756e+20
     conv_column_arsec=605.7383*1.823E18*(2.*np.pi/(np.log(256.)))
@@ -324,7 +321,6 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
-    print('Integrated Flux to Mass [1D]:','{:.3f}'.format(np.log10((0.236*dist**2.)*integrate.simps(2*np.pi*sbr*radi,radi))))
     #cflux = np.sum(sbr / 1.0E5)
     cflux = 1.0E-5
     #####################################################
@@ -381,7 +377,6 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         plt.close()
 
         fig, ax = plt.subplots(figsize=(20, 10))
-        #plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+' \n'+'log$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
         plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3))+';\t$\Delta$log(V)/$\Delta$log(R) = '+str(round(slope,5)),fontsize=label_size)
         plt.plot(radi,vrot)
         plt.xlabel('R [arcsec]',fontsize=label_size)
@@ -389,8 +384,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax.xaxis.set_minor_locator(minorLocator)
-        #ax.yaxis.set_minor_locator(minorLocator)
         plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
-    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist)
+    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END
