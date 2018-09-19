@@ -77,8 +77,8 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         rt=Ropt*func3(Mag,*rPE)
        
         # Outer edge, and half of it for the slope
-        x2 = RHI * 2.
-        x1 = RHI
+        x2 = RHI * 4./3.
+        x1 = RHI * 2./3.
         # Calculate rotation velocities at Ropt for all vt_0, rt
         vt = vt_0 * ( 1. - np.exp(-Ropt/rt) ) * ( 1. + a * Ropt/rt )
 
@@ -197,14 +197,16 @@ def BTFR(Mbar,slope,const,scatr):
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])+err(scatr[0]+err(scatr[1]))
     logv = np.log10(Mbar) * slope + const
+    print("VELOCITY BRADFORD",10.**logv)
     return 10.**(logv)
 
-def TFR(slope,const,vflat):
-    # Tully Fisher
+def BTFR_2(Mgas,slope,const):
+    #Baryonic Tully Fisher
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])
-    Mag = slope * (np.log10(vflat) -2.3)+const
-    return Mag
+    logv = np.log10(Mgas) * 1./slope - const/slope
+    print("VELOCITY SPARC",10.**logv)
+    return 10.**(logv)
 
 def expdisk(v,slope,const,scatr):
     #scale length for the polyex fit
@@ -251,6 +253,14 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
+    if (False):
+        split = 9.525
+        slope = np.array([[0.712,0.],[0.276,0.]])
+        const = np.array([[3.117,0.],[7.042,0.]])
+        scatr = np.array([[0.,0.],[0.,0.]])
+        Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
+
+    Mbar = Mstar + Mgas
     # Msun
 
     ######################################################
@@ -261,6 +271,11 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     const = np.array([-0.672,0.041])
     scatr = np.array([0.075,0.002])
     vflat = BTFR(Mbar,slope,const,scatr)
+    # This one is from SPARC
+    if (False):
+        slope = np.array([3.71,0.08])
+        const = np.array([2.27,0.18])
+        vflat = BTFR_2(Mgas,slope,const)
     # km/s
 
     ######################################################
@@ -289,14 +304,12 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Compute radial sampling cadence
     # 30 arcseconds to radians, small angle apprx
-    #dist  = DHI * 21600. / (beams*np.pi)
-    dist  = DHI * 32400. / (beams*np.pi)
-    dist = 7.83*1000
+    dist  = (4./3.)*DHI * 21600. / (beams*np.pi)
 
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
-    radi     = np.arange(0.,DHI+1,delta)
+    radi     = np.arange(0.,(2./3.)*DHI+delta,delta)
     vrot,rPE = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
     # Convert SBR to Jy
@@ -312,14 +325,15 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
     print('Integrated Flux to Mass [1D]:','{:.3f}'.format(np.log10((0.236*dist**2.)*integrate.simps(2*np.pi*sbr*radi,radi))))
-    cflux = np.sum(sbr / 1.0E5)
+    #cflux = np.sum(sbr / 1.0E5)
+    cflux = 1.0E-5
     #####################################################
     # Velocity dispersion 8km/s
     # Constant for now.
     # Use it to calculate disk thickness based on
     # Puche et al 1992
     # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
-    Vdisp = 13.
+    Vdisp = 10.
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
    
@@ -346,25 +360,36 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
 
         fig, ax = plt.subplots(figsize=(20, 10))
         plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
-        plt.semilogy(radi,sbr)
-        plt.xlabel('R [kpc]',fontsize=label_size)
+        plt.plot(radi,sbr)
+        plt.xlabel('R [arcsec]',fontsize=label_size)
         plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-2}$]',fontsize=label_size)
-        plt.axvline(DHI/2.)
+        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax.xaxis.set_minor_locator(minorLocator)
         plt.savefig('SBR.png',bbox_inches='tight')
         plt.close()
 
         fig, ax = plt.subplots(figsize=(20, 10))
+        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
+        plt.semilogy(radi,sbr)
+        plt.xlabel('R [arcsec]',fontsize=label_size)
+        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-2}$]',fontsize=label_size)
+        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
+        minorLocator = mpl.ticker.AutoMinorLocator()
+        ax.xaxis.set_minor_locator(minorLocator)
+        plt.savefig('SBR_log.png',bbox_inches='tight')
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(20, 10))
         #plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+' \n'+'log$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
         plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3))+';\t$\Delta$log(V)/$\Delta$log(R) = '+str(round(slope,5)),fontsize=label_size)
         plt.plot(radi,vrot)
-        plt.xlabel('R [kpc]',fontsize=label_size)
+        plt.xlabel('R [arcsec]',fontsize=label_size)
         plt.ylabel('Vc [km/s]',fontsize=label_size)
-        plt.axvline(DHI/2.)
+        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax.xaxis.set_minor_locator(minorLocator)
-        ax.yaxis.set_minor_locator(minorLocator)
+        #ax.yaxis.set_minor_locator(minorLocator)
         plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist)

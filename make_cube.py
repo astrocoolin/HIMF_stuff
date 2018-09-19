@@ -120,7 +120,7 @@ for inc in inc_list:
                         os.system("rm -r "+fname)
                         print("Refreshed folder")
                     os.system("mkdir "+fname)
-                    os.system("mv "+defname+" VROT.png SBR.png RC.dat "+fname)
+                    os.system("mv "+defname+" VROT.png SBR.png SBR_log.png RC.dat "+fname)
                 ######################################################################
                 if (make_cube):
                     second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.)
