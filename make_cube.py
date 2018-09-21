@@ -41,13 +41,13 @@ sn_list   = np.float32(params["sn"])
 
 iters = params["Ranges"]
 if 'masses' in iters:
-    mass_list = np.arange(mass_list[0],mass_list[1],mass_list[2])
+    mass_list = np.round(np.arange(mass_list[0],mass_list[1],mass_list[2]),5)
 if 'incs' in iters:
-    inc_list = np.arange(inc_list[0],inc_list[1],inc_list[2])
+    inc_list = np.round(np.arange(inc_list[0],inc_list[1],inc_list[2]),5)
 if 'beams' in iters:
-    beam_list = np.arange(beam_list[0],beam_list[1],beam_list[2])
+    beam_list = np.round(np.arange(beam_list[0],beam_list[1],beam_list[2]),5)
 if 'sn' in iters:
-    sn_list = np.arange(sn_list[0],sn_list[1],sn_list[2])
+    sn_list = np.round(np.arange(sn_list[0],sn_list[1],sn_list[2]),5)
     
 #########################################################
 print('Parameter Range:\n')

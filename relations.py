@@ -37,7 +37,7 @@ def make_vrot(radi,Mag,Ropt,alpha):
     rt=Ropt*func3(Mag,*rPE) 
     a = alpha
 
-    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt),rt
+    return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
 
 def Magcalc(vrot,Ropt,RHI,mstar):
     # Find Mag, and slope based on
@@ -109,7 +109,7 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_1)-np.log10(vt_2))/(np.log10(x2)-np.log10(x1))
 
-    return Mag,a,slope
+    return Mag,a,slope,vt_0,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
     # Return the surface brightness profile using the formula from PK
@@ -298,7 +298,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # Calculating Magnitude from vmax
     # Catinella et al 2005
     # https://arxiv.org/abs/astro-ph/0512051
-    Mag,alpha,slope = Magcalc(vflat,Ropt,DHI/2.,Mstar)
+    Mag,alpha,slope,v0,rPE = Magcalc(vflat,Ropt,DHI/2.,Mstar)
     # I-band mag
     #####################################################
     # Compute radial sampling cadence
@@ -309,7 +309,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
     radi     = np.arange(0.,(2./3.)*DHI+delta,delta)
-    vrot,rPE = make_vrot(radi,Mag,Ropt,alpha)
+    vrot     = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
     # Convert SBR to Jy
     sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
@@ -321,6 +321,7 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
+    rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
     cflux = 1.0E-5
     #####################################################
@@ -386,5 +387,5 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
         ax.xaxis.set_minor_locator(minorLocator)
         plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
-    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope)
+    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END

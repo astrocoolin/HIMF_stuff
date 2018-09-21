@@ -183,7 +183,7 @@ END                                                                             
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)
 
-def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope):
+def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE):
     fille = open('RC.dat',"w")
     fille.write("#  Date = "+str(datetime.datetime.now())[0:10]+"\n")
     fille.write('#  Mag  = '+str(Mag)+'\n')
@@ -195,7 +195,12 @@ def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope):
     fille.write('#  Rs       [kpc] = '+str(round(Rs,2))+'\n')
     fille.write('#  Distance [kpc] = '+str('{:.2E}'.format(dist))+'\n')
     fille.write('#  DHI     [km/s] = '+str(round(DHI,2))+"\n")
-    fille.write('#  DlogV/DlogR    = '+str(round(slope,2))+"\n")
+    fille.write('#  DlogV/DlogR    = '+str(round(slope,2))+"\n \n")
+    fille.write('#  Polyex Rotation curve parameters: \n')
+    fille.write('#  V(r) = v0*(1-exp(-r/rPE)) * (1+a*r/rPE): \n')
+    fille.write('#  a            = '+str(alpha)+"\n")
+    fille.write('#  v0    [km/s] = '+str(v0)+"\n")
+    fille.write('#  rPE [arcsec] = '+str(np.float32(rPE))+"\n \n")
     fille.write('#  Rotation curve \n \n')
 
 def rotfile(radi,vrot,sbr,z,END):
