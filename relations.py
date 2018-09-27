@@ -303,27 +303,27 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Compute radial sampling cadence
     # 30 arcseconds to radians, small angle apprx
-    dist  = (4./3.)*DHI * 21600. / (beams*np.pi)
+    dist  = DHI * (21600./np.pi) / (beams)
 
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
-    radi     = np.arange(0.,(2./3.)*DHI+delta,delta)
+    radi     = np.arange(0.,DHI+delta,delta)
     vrot     = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
     # Convert SBR to Jy
     sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
     #sbr      = (3600./(0.236*dist**2.))*sbr
-    sbr = sbr * 1.24756e+20
-    conv_column_arsec=605.7383*1.823E18*(2.*np.pi/(np.log(256.)))
-    sbr = sbr/(conv_column_arsec*1000.)
+    sbr = sbr 
+    conv=6.057383E5*1.823E18*8.015E-21/(2*np.pi/np.log(256.))
+    sbr = sbr/(conv)
     #####################################################
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
     rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
-    cflux = 1.0E-5
+    cflux = 5.0E-6
     #####################################################
     # Velocity dispersion 8km/s
     # Constant for now.
