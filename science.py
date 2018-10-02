@@ -67,6 +67,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     cube_in = hdulist[0].data
+    scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
+    print('Poop',mass,np.log10(scoop),(scoop-10.**mass)/(10.**mass)*100.,'%')
 
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
@@ -85,11 +87,15 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
 
+    smooth[smooth < cutoff]=0.
+    smooth[smooth > cutoff]=1.
+    mask = smooth 
+
     noise = mean_signal/sn
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
 
-    cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
+    cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))*0
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
 
@@ -105,13 +111,29 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     prihdr['COMMENT'] = 'Beams Across: '+str(ba)
     prihdr['COMMENT'] = 'Inclination:  '+str(inc)
     prihdr['COMMENT'] = 'Mass: '+str(mass)
-
+    
     hdu = fits.PrimaryHDU(cube,header=prihdr)
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-    Mtest=(0.236)*(dist)**2.*np.sum(cube)*4./((np.pi*beam**2.)/(4.*np.log(2.)))
+    hdu = fits.PrimaryHDU(mask,header=prihdr)
+    hlist = fits.HDUList([hdu])
+    hlist.writeto('mask.fits',overwrite=True)
+    
+    beamarea=(np.pi*30.**2.)/(4.*np.log(2.))
+    pixperbeam=beamarea/(abs(prihdr['CDELT1']*3600.)*abs(prihdr['CDELT2']*3600.))
+    totalsignal = np.sum(cube[mask > 0.5])/pixperbeam
+
+    mass = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
+
+    Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
     print("Integrated Cube to Mass",'{:.3f}'.format(np.log10(Mtest)))
+    print("Integrated Cube to Mass, (from masked)",'{:.3f}'.format(np.log10(mass)))
+
+    mom0 = np.sum(cube,axis=0)*abs(float(hdulist[0].header['CDELT3'])/1000.)
+    flux = ( 1.247E20 * (30.*1.42)**2.) / ( 2.229E24 )
+    print(flux)
+
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

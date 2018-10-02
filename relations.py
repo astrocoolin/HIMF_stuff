@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
 from scipy import integrate
+from scipy import ndimage
 from Input_output import rothead
 
 def func(x,a,b,c,d):
@@ -303,8 +304,20 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Compute radial sampling cadence
     # 30 arcseconds to radians, small angle apprx
-    dist  = DHI * (21600./np.pi) / (beams)
+    shrink = 1./10. 
+    scale = 1.
+    for iteration in range(0,3):
+        dist  = scale*shrink*DHI * (21600./np.pi) / (beams)
+        delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
+        radi     = np.arange(0.,DHI+delta,delta)
+        sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
+        phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
+        sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
+        scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
+        #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
+        dist  = scale*DHI * (21600./np.pi) / (beams)
 
+    print('scale',scale)
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
@@ -313,17 +326,19 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     #####################################################
     # Convert SBR to Jy
     sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
+    #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
+
     #sbr      = (3600./(0.236*dist**2.))*sbr
-    sbr = sbr 
     conv=6.057383E5*1.823E18*8.015E-21/(2*np.pi/np.log(256.))
     sbr = sbr/(conv)
+
     #####################################################
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
     rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
-    cflux = 5.0E-6
+    cflux = 1.0E-6
     #####################################################
     # Velocity dispersion 8km/s
     # Constant for now.

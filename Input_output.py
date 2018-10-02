@@ -53,8 +53,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
         file.write(' +')
         file.write('{:.3e}'.format(vrot[i]))
     file.write("\n\nSBR=")
-    file.write('0.000000E+00')
-    for i in range(1,len(vrot_str)):
+    for i in range(0,len(vrot_str)):
         file.write(' +')
         file.write('{:.3e}'.format(sbr[i]))
     file.write("\n\nZ=")
@@ -139,39 +138,16 @@ CRPIX2  =              200.000 / PRIMARY REFERENCE PIXEL                        
 CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        \
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \
 CUNIT2  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
-CDELT3  =              4000.00 / PRIMARY PIXEL SEPARATION                       \
+CDELT3  =              5000.00 / PRIMARY PIXEL SEPARATION                       \
 CRPIX3  =              75.0000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL3  =        1403931.64636 / PRIMARY REFERENCE VALUE                        \
 CTYPE3  = 'VELO-LSR'           / PRIMARY AXIS NAME                              \
 CUNIT3  = 'M/S     '           / PRIMARY AXIS UNITS                             \
-DRVAL3  =   4.565000000000E+03 / SECONDARY REFERENCE VALUE                      \
-DTYPE3  = 'VELO              ' / SECONDARY AXIS NAME                            \
-DUNIT3  = 'M/S               ' / SECONDARY AXIS UNITS                           \
 EPOCH   =   2.000000000000E+03 / EPOCH                                          \
-INSTRUME= 'WSRT              ' / INSTRUMENT                                     \
-SUBTR   =                    0 /SOURCE SUBTRACTION                              \
-CHANEND =                   51 / last usable continuum channel                  \
 UVCDT   = 'NORMAL     '        /UV COORDINATE TYPE                              \
 BLGRAD  = 'NATURAL    '        /TAPER TYPE                                      \
 MAPTYP  = 'MAP'                                                                 \
-INSECT  =                    1 /INPUT SECTORS.                                  \
 BUNIT   = 'Jy/Beam           '                                                  \
-FIRSTLCH=                  -41 / low velocity edge of line signal               \
-DATE    = '12/12/01'                                                            \
-CHANSTA =                  -58 / 1st usable continuum channel                   \
-FREQR   =       1399164042.224 /REFERENCE FREQUENCY (HERTZ)                     \
-LASTLCH =                   30 / high velocity edge of line signal              \
-DATTYP  = 'NORMAL     '        /DATA TYPE                                       \
-DATE-OBS=             2000.684                                                  \
-CLIP    =                    0 /CLIPPING DONE                                   \
-CRESL3  =             39062.50 /BANDWIDTH (HERTZ)                               \
-CORGRID =                    1 /CORRECT FOR CONVOLUTION                         \
-BANDW   =              4960938 /TOTAL BANDWIDTH OF OBS(HERTZ)                   \
-VEL     =              4030617 /CENTRE VELOCITY (M/S)                           \
-DEBEAM  =                    0 /DE-BEAM COUNT                                   \
-NORM    =             14210.61 /NORM. FACTOR IN FFT                             \
-VELR    =              4565000 /REFERENCE VELOCITY (M/S)                        \
-SETNR   =                    1 /# OF SET.                                       \
 BMAJ    =        0.00000000000 /                                                \
 BMIN    =        0.00000000000 /                                                \
 BPA     =                    0 /                                                \
