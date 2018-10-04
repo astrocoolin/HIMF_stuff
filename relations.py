@@ -136,7 +136,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     x=0.36
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.085,0.0851,0.001)
+    delta = np.arange(-0.095,0.096,0.001)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
@@ -147,13 +147,13 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    if round(dx,3) <= -0.085 or round(dx,3) >= 0.085:
+    if round(dx,3) <= -0.095 or round(dx,3) >= 0.096:
         while True:
             print("FAILURE",dx,0.36+dx)
             stop
 
 
-    return sbr
+    return sbr,dx
 
 def make_z(radi,vrot,sigma):
     z = np.zeros_like(radi)
@@ -213,7 +213,7 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return 10.**(const + slope * np.log10(v))
 
-def setup_relations(mass,beams,ring_thickness,make_plots):
+def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -307,16 +307,16 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     shrink = 1./10. 
     scale = 1.
     for iteration in range(0,3):
-        dist  = scale*shrink*DHI * (21600./np.pi) / (beams)
+        dist  = scale*shrink*DHI * (206265/(beam*beams))
         delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
         radi     = np.arange(0.,DHI+delta,delta)
-        sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
+        sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
         phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
         sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
         scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
         #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
-        dist  = scale*DHI * (21600./np.pi) / (beams)
-
+        dist  = scale*DHI * (206265/(beam*beams))
+    #dist = DHI * (206265/(beam*beams))
     print('scale',scale)
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
@@ -325,12 +325,22 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     vrot     = make_vrot(radi,Mag,Ropt,alpha)
     #####################################################
     # Convert SBR to Jy
-    sbr      = make_sbr(radi,Rs,DHI,vflat,mass)
+    sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
+    print('Analytical Mass',np.log10(integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.))
     #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
 
     #sbr      = (3600./(0.236*dist**2.))*sbr
-    conv=6.057383E5*1.823E18*8.015E-21/(2*np.pi/np.log(256.))
-    sbr = sbr/(conv)
+    def prof_check(sig,sig_hi,x0,vflat,hr,radi,sbr):
+        one = (np.sqrt(sig_hi**2.+sig**2.)/sig*np.exp((0.5)*(-x0**2./sig_hi**2.-radi**2./sig**2.))*np.exp((x0/sig_hi**2.+radi/sig**2.)*(sig_hi**2.+sig**2.)/2.))
+        two = (np.sqrt(vflat/120.)-1.)*(1./(np.sqrt(2)*sig))*np.exp(1./hr**2.-sig**2./2)*np.exp(radi/hr)
+        print(sig,sig_hi,x0,vflat,hr,DHI/2.)
+        plt.plot(radi,np.log10(one-two))
+        plt.plot(radi,np.log10(sbr))
+        plt.show()
+    prof_check(phys_sig,(DHI/2.)*(0.36+ dx),0.4*DHI/2.,vflat,Rs,radi,sbr)
+    conv=6.0574E5*1.823E18*(2*np.pi/np.log(256.))
+    sbr = sbr*1.24756e+20/(conv)
+
 
     #####################################################
     # Set the radii, rotation curve, surface brightness prof
@@ -345,9 +355,11 @@ def setup_relations(mass,beams,ring_thickness,make_plots):
     # Use it to calculate disk thickness based on
     # Puche et al 1992
     # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
-    Vdisp = 10.
+    Vdisp = 2.
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
+    
+    print('try two',np.log10(integrate.simps(sbr*2.*np.pi*radi,radi)*(dist/1000.)**2.*2.356E5))
    
     if (make_plots):
         label_size=21.5

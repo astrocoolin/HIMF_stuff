@@ -4,6 +4,7 @@ from astropy.io import fits
 from astropy.convolution import Gaussian2DKernel, Gaussian1DKernel ,convolve, convolve_fft
 from scipy.optimize import curve_fit
 from scipy import ndimage
+from scipy.spatial.distance import pdist
 from decimal import Decimal
 import random 
 import os
@@ -63,17 +64,16 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
+def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
-    cube_in = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
-    print('Poop',mass,np.log10(scoop),(scoop-10.**mass)/(10.**mass)*100.,'%')
+    print('TestMass',mass,np.log10(scoop),(scoop-10.**mass)/(10.**mass)*100.,'%')
 
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
     print('------------------')
-    beam=30./delt
+    beam=beam_arcsec/delt #arcseconds / (arcseconds / pixel)
 
     fwhm = 2.*np.sqrt(2.*np.log(2.))        #FWHM  = 2.355* sigma
     bmaj_fwhm = beam #pixels; #30 arcsecond beam
@@ -82,7 +82,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     print('BMAJ: (FWHM) ',round(bmaj_fwhm*delt,2),' arcseconds,',round(bmaj_fwhm,2),' pixels')
     gauss = Gaussian2DKernel(bmaj_sigma)
     print('Calculating Noise level')
-    cflux_min = 1.E-5
+    cflux_min = 1.E-6
     cutoff = np.mean(cube[cube>cflux_min])/(4.*np.sqrt(np.pi)*bmaj_sigma)
     smooth = ndimage.gaussian_filter(cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     mean_signal = np.mean(smooth[smooth > cutoff])
@@ -120,7 +120,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     hlist = fits.HDUList([hdu])
     hlist.writeto('mask.fits',overwrite=True)
     
-    beamarea=(np.pi*30.**2.)/(4.*np.log(2.))
+    beamarea=(np.pi*beam_arcsec**2.)/(4.*np.log(2.))
     pixperbeam=beamarea/(abs(prihdr['CDELT1']*3600.)*abs(prihdr['CDELT2']*3600.))
     totalsignal = np.sum(cube[mask > 0.5])/pixperbeam
 
@@ -131,9 +131,39 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min):
     print("Integrated Cube to Mass, (from masked)",'{:.3f}'.format(np.log10(mass)))
 
     mom0 = np.sum(cube,axis=0)*abs(float(hdulist[0].header['CDELT3'])/1000.)
-    flux = ( 1.247E20 * (30.*1.42)**2.) / ( 2.229E24 )
+    flux = ( 1.247E20 * (beam_arcsec*1.42)**2.) / ( 2.229E24 )
     print(flux)
 
+    mom_mask = np.nan * mom0
+    mom_mask = np.array([mom_mask,mom_mask,mom_mask])
+    print(np.shape(mom_mask),np.shape(mom0))
+    for i in range(0,len(mom_mask[0,0,:])):
+        for j in range(0,len(mom_mask[0,:,0])):
+            if mom0[i,j] > flux:
+                mom_mask[0,i,j] = mom0[i,j]
+                mom_mask[1,i,j] = i
+                mom_mask[2,i,j] = j
+
+    hdu = fits.PrimaryHDU(mom_mask,header=prihdr)
+    hlist = fits.HDUList([hdu])
+    hlist.writeto('mom_mask.fits',overwrite=True)
+
+    print('determining the radius')
+    mini = int(np.min(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
+    minj = int(np.min(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
+    maxi = int(np.max(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
+    maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
+    print(mini,minj,maxi,maxj)
+
+
+    #for i in range(mini,maxi):
+    #    for j in range(minj,maxj):
+    #        dxy = np.sqrt((i - mom_mask[1,mini:maxi,minj:maxj])**2. + (j - mom_mask[2,mini:maxi,minj:maxj])**2.)
+    #print(np.max(dists[np.isfinite(dists)]))
+    dists = maxi-mini
+    print(dists)
+    f = open('distances.txt','a')
+    f.write(str(np.log10(Mtest))+' '+str(inc)+' '+str(dists)+'\n')
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

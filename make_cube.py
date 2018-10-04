@@ -15,6 +15,7 @@ from relations import *
 pi = np.pi
 KPC =1.0E3
 MPC =1.0E6
+beam = 30.
 
 with open('config.json') as f:
     params = json.load(f)
@@ -87,7 +88,7 @@ for inc in inc_list:
                 ######################################################################
                 radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
                         Mstar,slope,rd,rPE,cflux,END = \
-                        setup_relations(mass,beams,delta,make_output)
+                        setup_relations(mass,beams,beam,delta,make_output)
                 ######################################################################
                 # Make a file containing the rotation curve and SBP
                 # Make an input file for TiRiFiC, make an empty FITS file
@@ -127,7 +128,7 @@ for inc in inc_list:
                 if (make_cube):
                     for num in range(1,2):
                         print("realization #",num)
-                        second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.)
+                        second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.,beam)
                         os.system("mv "+outname+" mask.fits "+fname+'.noise'+str(num))
                         os.system("cp "+outset+" "+fname+'.noise'+str(num))
                     os.system("rm "+outname+" "+outset)
