@@ -50,6 +50,8 @@ if 'beams' in iters:
 if 'sn' in iters:
     sn_list = np.round(np.arange(sn_list[0],sn_list[1],sn_list[2]),5)
     
+copies = int(np.float32(params["Gal_Realizations"])+1)
+reals  = int(np.float32(params["Noise_Realizations"])+1)
 #########################################################
 print('Parameter Range:\n')
 print('beams:',beam_list)
@@ -68,73 +70,74 @@ for inc in inc_list:
     for beams in beam_list:
         for snr in sn_list:
             for i, mass in enumerate(mass_list):
-                print('\nThis Galaxy:\n')
-                print('beams:',[beams])
-                print('inc:',[inc])
-                print('mass:',[mass])
-                print('snr:',[snr])
-                ######################################################################
-                # Names of files
-                ######################################################################
-                defname ="cube_input.def"
-                inset   ='empty.fits'
-                outset  ='Cube_base.fits'
-                outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
-                        str(inc)+".SN_"+str(snr)+'.fits'
-                fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
-                        str(inc)+".SN_"+str(snr)
-                ######################################################################
-                # Use scaling relations to set up the galaxy
-                ######################################################################
-                radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
-                        Mstar,slope,rd,rPE,cflux,END = \
-                        setup_relations(mass,beams,beam,delta,make_output)
-                ######################################################################
-                # Make a file containing the rotation curve and SBP
-                # Make an input file for TiRiFiC, make an empty FITS file
-                ######################################################################
-                if (make_output):
-                    filecheck = Path('defname')
-                    if filecheck.is_file(): os.system("rm "+defname)
-
-                    rotfile(radi,vrot,sbr,z,len(radi))
-                    deffile(outset,inset,defname,radi,vrot,sbr,inc,\
-                        len(radi),condisp,z,cflux)
-                ######################################################################
-                # Make new cube, folder for it, clear old files
-                ######################################################################
-                if (make_cube):
-                    filecheck = Path('outname')
-                    if filecheck.is_file(): os.system("rm "+outname)
-                    filecheck = Path('empty.fits')
-                    if filecheck.is_file(): os.system("rm empty.fits")
-                    filecheck = Path('Logfile.log')
-                    if filecheck.is_file(): os.system("rm Logfile.log")
-
-                    emptyfits(inset)
-                    os.system("tirific deffile="+defname)
-                    print("Cube finished")
-                ######################################################################
-                if (make_folder):
-                    filecheck = Path(fname)
-                    for num in range(1,2):
-                        if filecheck.is_dir (): 
-                            os.system("rm -r "+fname+'.noise'+str(num))
-                            print("Refreshed folder")
-                        os.system("mkdir "+fname+'.noise'+str(num))
-                        os.system("cp "+defname+" VROT.png SBR.png SBR_log.png RC.dat "+fname+'.noise'+str(num))
-                    os.system("rm "+defname+" VROT.png SBR.png SBR_log.png RC.dat ")
-                ######################################################################
-                if (make_cube):
-                    for num in range(1,2):
-                        print("realization #",num)
-                        second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.,beam)
-                        os.system("mv "+outname+" mask.fits "+fname+'.noise'+str(num))
-                        os.system("cp "+outset+" "+fname+'.noise'+str(num))
-                    os.system("rm "+outname+" "+outset)
-                    os.system("rm empty.fits Logfile.log")
-                ######################################################################
-                #os.system('eog '+fname+'/VROT.png')
-                file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+\
-                        " "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+\
-                        " "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")
+                for j in range(1,copies):
+                    print('\nThis Galaxy (copy #'+str(j)+'):\n')
+                    print('beams:',[beams])
+                    print('inc:',[inc])
+                    print('mass:',[mass])
+                    print('snr:',[snr])
+                    ######################################################################
+                    # Names of files
+                    ######################################################################
+                    defname ="cube_input.def"
+                    inset   ='empty.fits'
+                    outset  ='Cube_base.fits'
+                    outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
+                            str(inc)+".SN_"+str(snr)+'.fits'
+                    fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
+                            str(inc)+".SN_"+str(snr)
+                    ######################################################################
+                    # Use scaling relations to set up the galaxy
+                    ######################################################################
+                    radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
+                            Mstar,slope,rd,rPE,cflux,END = \
+                            setup_relations(mass,beams,beam,delta,make_output)
+                    ######################################################################
+                    # Make a file containing the rotation curve and SBP
+                    # Make an input file for TiRiFiC, make an empty FITS file
+                    ######################################################################
+                    if (make_output):
+                        filecheck = Path('defname')
+                        if filecheck.is_file(): os.system("rm "+defname)
+    
+                        rotfile(radi,vrot,sbr,z,len(radi))
+                        deffile(outset,inset,defname,radi,vrot,sbr,inc,\
+                            len(radi),condisp,z,cflux)
+                    ######################################################################
+                    # Make new cube, folder for it, clear old files
+                    ######################################################################
+                    if (make_cube):
+                        filecheck = Path('outname')
+                        if filecheck.is_file(): os.system("rm "+outname)
+                        filecheck = Path('empty.fits')
+                        if filecheck.is_file(): os.system("rm empty.fits")
+                        filecheck = Path('Logfile.log')
+                        if filecheck.is_file(): os.system("rm Logfile.log")
+    
+                        emptyfits(inset)
+                        os.system("tirific deffile="+defname)
+                        print("Cube finished")
+                    ######################################################################
+                    if (make_folder):
+                        filecheck = Path(fname)
+                        for num in range(1,reals):
+                            if filecheck.is_dir (): 
+                                os.system("rm -r "+fname+'.noise'+str(num))
+                                print("Refreshed folder")
+                            os.system("mkdir "+fname+'.noise'+str(num))
+                            os.system("cp "+defname+" VROT.png SBR.png SBR_log.png RC.dat "+fname+'.noise'+str(num))
+                        os.system("rm "+defname+" VROT.png SBR.png SBR_log.png RC.dat ")
+                    ######################################################################
+                    if (make_cube):
+                        for num in range(1,reals):
+                            print("realization #",num)
+                            second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.,beam)
+                            os.system("mv "+outname+" mask.fits "+fname+'.noise'+str(num))
+                            os.system("cp "+outset+" "+fname+'.noise'+str(num))
+                        os.system("rm "+outname+" "+outset)
+                        os.system("rm empty.fits Logfile.log")
+                    ######################################################################
+                    #os.system('eog '+fname+'/VROT.png')
+                    file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+\
+                            " "+str(np.max(vrot))+" "+str(np.max(vflat))+" "+str(Mstar)+\
+                            " "+str(slope)+" "+str(rd)+" "+str(rPE)+"\n")

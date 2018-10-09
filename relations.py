@@ -93,7 +93,7 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         vt_0 = vt_0[ind]
        
         # Consider a range of values of alpha
-        a = np.arange(-0.04,0.4,0.0001)
+        a = np.arange(-0.04,0.4,0.001)
         slope1 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
         slope2 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
         # Only want values where logv is defined (v>0)
@@ -136,7 +136,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     x=0.36
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.095,0.096,0.001)
+    delta = np.arange(-0.1,0.101,0.001)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
@@ -147,7 +147,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    if round(dx,3) <= -0.095 or round(dx,3) >= 0.096:
+    if round(dx,3) <= -0.1 or round(dx,3) >= 0.1:
         while True:
             print("FAILURE",dx,0.36+dx)
             stop
@@ -326,21 +326,37 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     #####################################################
     # Convert SBR to Jy
     sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
+    sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
     print('Analytical Mass',np.log10(integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.))
     #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
 
     #sbr      = (3600./(0.236*dist**2.))*sbr
-    def prof_check(sig,sig_hi,x0,vflat,hr,radi,sbr):
-        one = (np.sqrt(sig_hi**2.+sig**2.)/sig*np.exp((0.5)*(-x0**2./sig_hi**2.-radi**2./sig**2.))*np.exp((x0/sig_hi**2.+radi/sig**2.)*(sig_hi**2.+sig**2.)/2.))
-        two = (np.sqrt(vflat/120.)-1.)*(1./(np.sqrt(2)*sig))*np.exp(1./hr**2.-sig**2./2)*np.exp(radi/hr)
-        print(sig,sig_hi,x0,vflat,hr,DHI/2.)
-        plt.plot(radi,np.log10(one-two))
-        plt.plot(radi,np.log10(sbr))
+    def prof_check(sig,sig_hi,x0,vflat,hr,radi,sbr,sbr_beam):
+        pi = np.pi
+        const = (sig*np.sqrt(2.*pi))
+        C = 1./(sig*np.sqrt(2.*pi)) * np.exp((-x0**2./(sig_hi**2.)-radi**2./sig**2.)*0.5)
+        B = x0/sig_hi**2. + radi/sig**2.
+        A = 0.5*(1./(sig_hi**2.)+1./(sig**2.))
+        one = C * np.sqrt(pi/A) * np.exp(B**2./(4.*A))* const
+
+        A = 2*sig**2.
+        B = hr
+        C = (np.sqrt(vflat/120.)-1) * ( 1./np.sqrt(2.*sig**2.))*np.exp(-radi/A)
+        two = C * np.sqrt(pi * B) * np.exp(B/(4.*A**2.))
+        #(np.sqrt(vflat/120.)-1.)*(1./(np.sqrt(2.)*sig))*np.exp(1./hr**2.-sig**2./2.)*np.exp(-radi/hr)* const
+        #print(sig,2*sig_hi/DHI,2*x0/DHI,vflat,hr,DHI/2.)
+        #print(integrate.simps(sbr,radi))
+        #print(integrate.simps(sbr_beam,radi))
+        #print(integrate.simps(one-two,radi),integrate.simps(one-two,radi)/integrate.simps(sbr,radi))
+        plt.plot(radi,(one-two),label='analytical_conv')
+        plt.plot(radi,(sbr),label='sbr')
+        plt.plot(radi,(sbr_beam),label='numerical_conv')
+        #plt.yscale('log')
+        plt.legend()
         plt.show()
-    prof_check(phys_sig,(DHI/2.)*(0.36+ dx),0.4*DHI/2.,vflat,Rs,radi,sbr)
+    prof_check(phys_sig,(DHI/2.)*(0.36+ dx),0.4*DHI/2.,vflat,Rs,radi,sbr,sbr_beam)
     conv=6.0574E5*1.823E18*(2*np.pi/np.log(256.))
     sbr = sbr*1.24756e+20/(conv)
-
 
     #####################################################
     # Set the radii, rotation curve, surface brightness prof
@@ -359,8 +375,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
     
-    print('try two',np.log10(integrate.simps(sbr*2.*np.pi*radi,radi)*(dist/1000.)**2.*2.356E5))
-   
     if (make_plots):
         label_size=21.5
         lw=1.5

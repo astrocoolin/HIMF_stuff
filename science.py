@@ -155,11 +155,6 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
     print(mini,minj,maxi,maxj)
 
-
-    #for i in range(mini,maxi):
-    #    for j in range(minj,maxj):
-    #        dxy = np.sqrt((i - mom_mask[1,mini:maxi,minj:maxj])**2. + (j - mom_mask[2,mini:maxi,minj:maxj])**2.)
-    #print(np.max(dists[np.isfinite(dists)]))
     dists = maxi-mini
     print(dists)
     f = open('distances.txt','a')
