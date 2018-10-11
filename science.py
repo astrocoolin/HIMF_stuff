@@ -95,7 +95,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
 
-    cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))*0
+    cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
 
@@ -127,12 +127,12 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     mass = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
 
     Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
-    print("Integrated Cube to Mass",'{:.3f}'.format(np.log10(Mtest)))
-    print("Integrated Cube to Mass, (from masked)",'{:.3f}'.format(np.log10(mass)))
+#    print("Integrated Cube to Mass",'{:.3f}'.format(np.log10(Mtest)))
+#    print("Integrated Cube to Mass, (from masked)",'{:.3f}'.format(np.log10(mass)))
 
     mom0 = np.sum(cube,axis=0)*abs(float(hdulist[0].header['CDELT3'])/1000.)
     flux = ( 1.247E20 * (beam_arcsec*1.42)**2.) / ( 2.229E24 )
-    print(flux)
+    #print(flux)
 
     mom_mask = np.nan * mom0
     mom_mask = np.array([mom_mask,mom_mask,mom_mask])
@@ -148,15 +148,15 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     hlist = fits.HDUList([hdu])
     hlist.writeto('mom_mask.fits',overwrite=True)
 
-    print('determining the radius')
+    #print('determining the radius')
     mini = int(np.min(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
     minj = int(np.min(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
     maxi = int(np.max(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
     maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
-    print(mini,minj,maxi,maxj)
+    #print(mini,minj,maxi,maxj)
 
     dists = maxi-mini
-    print(dists)
+    #print(dists)
     f = open('distances.txt','a')
     f.write(str(np.log10(Mtest))+' '+str(inc)+' '+str(dists)+'\n')
 

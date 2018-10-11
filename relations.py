@@ -316,8 +316,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
         scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
         #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
         dist  = scale*DHI * (206265/(beam*beams))
-    #dist = DHI * (206265/(beam*beams))
-    print('scale',scale)
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
@@ -327,34 +325,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     # Convert SBR to Jy
     sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
     sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
-    print('Analytical Mass',np.log10(integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.))
-    #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
-
-    #sbr      = (3600./(0.236*dist**2.))*sbr
-    def prof_check(sig,sig_hi,x0,vflat,hr,radi,sbr,sbr_beam):
-        pi = np.pi
-        const = (sig*np.sqrt(2.*pi))
-        C = 1./(sig*np.sqrt(2.*pi)) * np.exp((-x0**2./(sig_hi**2.)-radi**2./sig**2.)*0.5)
-        B = x0/sig_hi**2. + radi/sig**2.
-        A = 0.5*(1./(sig_hi**2.)+1./(sig**2.))
-        one = C * np.sqrt(pi/A) * np.exp(B**2./(4.*A))* const
-
-        A = 2*sig**2.
-        B = hr
-        C = (np.sqrt(vflat/120.)-1) * ( 1./np.sqrt(2.*sig**2.))*np.exp(-radi/A)
-        two = C * np.sqrt(pi * B) * np.exp(B/(4.*A**2.))
-        #(np.sqrt(vflat/120.)-1.)*(1./(np.sqrt(2.)*sig))*np.exp(1./hr**2.-sig**2./2.)*np.exp(-radi/hr)* const
-        #print(sig,2*sig_hi/DHI,2*x0/DHI,vflat,hr,DHI/2.)
-        #print(integrate.simps(sbr,radi))
-        #print(integrate.simps(sbr_beam,radi))
-        #print(integrate.simps(one-two,radi),integrate.simps(one-two,radi)/integrate.simps(sbr,radi))
-        plt.plot(radi,(one-two),label='analytical_conv')
-        plt.plot(radi,(sbr),label='sbr')
-        plt.plot(radi,(sbr_beam),label='numerical_conv')
-        #plt.yscale('log')
-        plt.legend()
-        plt.show()
-    prof_check(phys_sig,(DHI/2.)*(0.36+ dx),0.4*DHI/2.,vflat,Rs,radi,sbr,sbr_beam)
     conv=6.0574E5*1.823E18*(2*np.pi/np.log(256.))
     sbr = sbr*1.24756e+20/(conv)
 

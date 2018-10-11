@@ -61,7 +61,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
         file.write(' +')
         file.write('{:.3e}'.format(z[i]))
     file.write("\nINCL= +"+str(float(inc)))
-    file.write("\nPA= +0.00000E+00")
+    file.write("\nPA= +4.50000E+00")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
     file.write("\nVSYS= +1403.93164636")
@@ -126,12 +126,12 @@ NAXIS1  =              400.000 /Number of positions along axis 1                
 NAXIS2  =              400.000 /Number of positions along axis 2                \
 NAXIS3  =              120.000 /Number of positions along axis 3                \
 BLOCKED =                    T / TAPE MAY BE BLOCKED                            \
-CDELT1  =         -0.000277778 /                                                \
+CDELT1  =          -0.00111111 /                                                \
 CRPIX1  =              200.000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL1  =        277.675431576 / PRIMARY REFERENCE VALUE                        \
 CTYPE1  = 'RA---TAN'           / PRIMARY AXIS NAME                              \
 CUNIT1  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
-CDELT2  =          0.000277778 /                                                \
+CDELT2  =           0.00111111 /                                                \
 CRPIX2  =              200.000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        \
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \

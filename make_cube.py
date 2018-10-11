@@ -71,7 +71,7 @@ for inc in inc_list:
         for snr in sn_list:
             for i, mass in enumerate(mass_list):
                 for j in range(1,copies):
-                    print('\nThis Galaxy (copy #'+str(j)+'):\n')
+                    print('\nThis Galaxy (copy #'+str(j)+' of '+str(copies-1)+'):\n')
                     print('beams:',[beams])
                     print('inc:',[inc])
                     print('mass:',[mass])
