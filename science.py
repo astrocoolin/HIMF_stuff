@@ -96,7 +96,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
-    cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
+    cube = ndimage.gaussian_filter(0.*cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
 
     prihdr = hdulist[0].header
@@ -115,23 +115,16 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     hdu = fits.PrimaryHDU(cube,header=prihdr)
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
-
-    hdu = fits.PrimaryHDU(mask,header=prihdr)
-    hlist = fits.HDUList([hdu])
-    hlist.writeto('mask.fits',overwrite=True)
     
+    mom0 = np.sum(cube,axis=0)*abs(float(hdulist[0].header['CDELT3'])/1000.)
+    flux = ( 1.247E20 * (beam_arcsec*1.42)**2.) / ( 2.229E24 )
+
     beamarea=(np.pi*beam_arcsec**2.)/(4.*np.log(2.))
     pixperbeam=beamarea/(abs(prihdr['CDELT1']*3600.)*abs(prihdr['CDELT2']*3600.))
     totalsignal = np.sum(cube[mask > 0.5])/pixperbeam
 
-    mass = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
-
+    Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
     Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
-#    print("Integrated Cube to Mass",'{:.3f}'.format(np.log10(Mtest)))
-#    print("Integrated Cube to Mass, (from masked)",'{:.3f}'.format(np.log10(mass)))
-
-    mom0 = np.sum(cube,axis=0)*abs(float(hdulist[0].header['CDELT3'])/1000.)
-    flux = ( 1.247E20 * (beam_arcsec*1.42)**2.) / ( 2.229E24 )
     #print(flux)
 
     mom_mask = np.nan * mom0
@@ -158,7 +151,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     dists = maxi-mini
     #print(dists)
     f = open('distances.txt','a')
-    f.write(str(np.log10(Mtest))+' '+str(inc)+' '+str(dists)+'\n')
+    f.write(str(np.log10(Mtest))+' '+str(np.log10(Mtest1))+' '+str(inc)+' '+str(dists)+" "+str(np.log10(dist))+'\n')
+    f.close()
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

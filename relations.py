@@ -136,7 +136,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     x=0.36
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.1,0.101,0.001)
+    delta = np.arange(-0.15,0.151,0.005)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
@@ -147,11 +147,10 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    if round(dx,3) <= -0.1 or round(dx,3) >= 0.1:
+    if round(dx,3) <= -0.15 or round(dx,3) >= 0.151:
         while True:
             print("FAILURE",dx,0.36+dx)
             stop
-
 
     return sbr,dx
 
@@ -199,19 +198,11 @@ def BTFR(Mbar,slope,const,scatr):
     #print("VELOCITY BRADFORD",10.**logv)
     return 10.**(logv)
 
-def BTFR_2(Mgas,slope,const):
-    #Baryonic Tully Fisher
-    slope = slope[0] + err(slope[1])
-    const = const[0] + err(const[1])
-    logv = np.log10(Mgas) * 1./slope - const/slope
-    #print("VELOCITY SPARC",10.**logv)
-    return 10.**(logv)
-
 def expdisk(v,slope,const,scatr):
     #scale length for the polyex fit
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1]) + err(scatr)
-    return 10.**(const + slope * np.log10(v))
+    return float(10.**(const + slope * np.log10(v)))
 
 def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     ######################################################
@@ -252,15 +243,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
-    # From Sparc? (need source)
-    if (False):
-        split = 9.525
-        slope = np.array([[0.712,0.],[0.276,0.]])
-        const = np.array([[3.117,0.],[7.042,0.]])
-        scatr = np.array([[0.,0.],[0.,0.]])
-        Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
-
-    Mbar = Mstar + Mgas
     # Msun
 
     ######################################################
@@ -271,11 +253,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     const = np.array([-0.672,0.041])
     scatr = np.array([0.075,0.002])
     vflat = BTFR(Mbar,slope,const,scatr)
-    # This one is from SPARC (need source)
-    if (False):
-        slope = np.array([3.71,0.08])
-        const = np.array([2.27,0.18])
-        vflat = BTFR_2(Mgas,slope,const)
     # km/s
 
     ######################################################
@@ -306,16 +283,23 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     # 30 arcseconds to radians, small angle apprx
     shrink = 1./10. 
     scale = 1.
-    for iteration in range(0,3):
-        dist  = scale*shrink*DHI * (206265/(beam*beams))
-        delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
-        radi     = np.arange(0.,DHI+delta,delta)
-        sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
-        phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
-        sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
-        scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
-        #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
-        dist  = scale*DHI * (206265/(beam*beams))
+    if False:
+        for iteration in range(0,3):
+            dist  = scale*shrink*DHI * (206265/(beam*beams))
+            delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
+            radi     = np.arange(0.,DHI+delta,delta)
+            sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
+            phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
+            sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
+            #plt.plot(radi,sbr_beam)
+            #plt.plot(radi,sbr)
+            #plt.show()
+            
+            scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
+            #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
+            dist  = scale*DHI * (206265/(beam*beams))
+
+    dist  = DHI * (206265/(beam*beams))
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
@@ -324,7 +308,7 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     #####################################################
     # Convert SBR to Jy
     sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
-    sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
+    #sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
     conv=6.0574E5*1.823E18*(2*np.pi/np.log(256.))
     sbr = sbr*1.24756e+20/(conv)
 
@@ -344,6 +328,9 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     Vdisp = 2.
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
+    f = open('distances.txt','a')
+    f.write(str(np.log10(dist))+' '+str(vflat)+' '+str(DHI)+' '+str(np.log10(Mstar))+' '+str(Ropt)+' ')
+    f.close()
     
     if (make_plots):
         label_size=21.5
@@ -398,5 +385,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
         ax.xaxis.set_minor_locator(minorLocator)
         plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
+    
     rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE)
     return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END

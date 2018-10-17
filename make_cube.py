@@ -125,7 +125,7 @@ for inc in inc_list:
                                 os.system("rm -r "+fname+'.noise'+str(num))
                                 print("Refreshed folder")
                             os.system("mkdir "+fname+'.noise'+str(num))
-                            os.system("cp "+defname+" VROT.png SBR.png SBR_log.png RC.dat "+fname+'.noise'+str(num))
+                            os.system("cp "+defname+' '+outset+" VROT.png SBR.png SBR_log.png RC.dat "+fname+'.noise'+str(num))
                         os.system("rm "+defname+" VROT.png SBR.png SBR_log.png RC.dat ")
                     ######################################################################
                     if (make_cube):
@@ -133,8 +133,7 @@ for inc in inc_list:
                             print("realization #",num)
                             second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.,beam)
                             os.system("mv "+outname+" mask.fits "+fname+'.noise'+str(num))
-                            os.system("cp "+outset+" "+fname+'.noise'+str(num))
-                        os.system("rm "+outname+" "+outset)
+                        os.system("rm "+outname)
                         os.system("rm empty.fits Logfile.log")
                     ######################################################################
                     #os.system('eog '+fname+'/VROT.png')
