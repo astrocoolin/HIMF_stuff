@@ -164,7 +164,7 @@ def make_z(radi,vrot,sigma):
     return  z
 
 def err(errbar):
-    return errbar*(np.random.random()*2. - 1.)
+    return np.random.normal(loc=0.,scale=errbar)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -281,25 +281,8 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     #####################################################
     # Compute radial sampling cadence
     # 30 arcseconds to radians, small angle apprx
-    shrink = 1./10. 
-    scale = 1.
-    if False:
-        for iteration in range(0,3):
-            dist  = scale*shrink*DHI * (206265/(beam*beams))
-            delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
-            radi     = np.arange(0.,DHI+delta,delta)
-            sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
-            phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
-            sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
-            #plt.plot(radi,sbr_beam)
-            #plt.plot(radi,sbr)
-            #plt.show()
-            
-            scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
-            #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
-            dist  = scale*DHI * (206265/(beam*beams))
 
-    dist  = DHI * (206265/(beam*beams))
+    dist  = DHI * (206265./(beam*beams))
     delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
     #####################################################
     # Compute radi, rotation curve, surface brightness profile
@@ -309,7 +292,7 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     # Convert SBR to Jy
     sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
     #sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
-    conv=6.0574E5*1.823E18*(2*np.pi/np.log(256.))
+    conv=6.0574E5*1.823E18*(2.*np.pi/np.log(256.))
     sbr = sbr*1.24756e+20/(conv)
 
     #####################################################
@@ -328,9 +311,51 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     Vdisp = 2.
     z    = make_z(radi,vrot,Vdisp)
     ###############################################
-    f = open('distances.txt','a')
-    f.write(str(np.log10(dist))+' '+str(vflat)+' '+str(DHI)+' '+str(np.log10(Mstar))+' '+str(Ropt)+' ')
-    f.close()
+    #f = open('distances.txt','a')
+    sbr2 = sbr/1.24756e+20*(conv)
+    #f.write(str(np.max(sbr2[sbr2<1]))+" "+str(np.max(radi[sbr2<1]))+" "+str(DHI)+"\n")
+    #f.write(str(np.log10(dist))+' '+str(vflat)+' '+str(DHI)+' '+str(np.log10(Mstar))+' '+str(Ropt)+' ')
+    #f.close()
+    if False:
+    
+        def prof_check(sig,sig_hi,x0,vflat,hr,radi,sbr,sbr_beam):
+            pi = np.pi
+    
+            sig1 = sig
+            sig2 = sig_hi
+            C = np.sqrt(vflat/120.)-1.
+            one = np.exp(2.*radi*x0/(2.*sig1**2.+2.*sig2**2.))*np.exp((-x0**2.-radi**2.)/(2.*(sig1**2.+sig2**2.)))*sig1/np.sqrt(sig1**2.+sig2**2.)
+            two = C * np.exp(sig2**2./(2.*hr**2.))/np.exp(radi/hr)
+    
+            print(integrate.simps(sbr,radi))
+            print(integrate.simps(sbr_beam,radi))
+            print(integrate.simps(one-two,radi),integrate.simps(one-two,radi)/integrate.simps(sbr,radi))
+    
+            plt.plot(radi,(one-two),label='analytical_conv')
+            plt.plot(radi,(sbr),label='sbr')
+            plt.plot(radi,(sbr_beam),label='numerical_conv')
+            #plt.yscale('log')
+            plt.legend()
+            plt.show()
+    
+    
+        shrink = 1./10.
+        scale = 1.
+        for iteration in range(0,3):
+            dist  = scale*shrink*DHI * (206265/(beam*beams))
+            delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
+            radi     = np.arange(0.,DHI+delta,delta)
+            sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
+            phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
+            sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
+            scale = radi[np.argmin(sbr_beam[sbr_beam>1.])]/radi[np.argmin(sbr[sbr>1.])]
+            #print('ratio',scale,'dist',dist,'machine_sigma',phys_sig/delta,'total length',len(sbr),delta)
+            dist  = scale*DHI * (206265/(beam*beams))
+    
+        dist  = DHI * (206265/(beam*beams))
+        delta = ((ring_thickness*u.arcsec).to_value(u.rad)*(dist))
+        #phys_sig = (DHI/beams )/ (2.*np.sqrt(2.*np.log(2.)))
+        #prof_check(phys_sig,(DHI/2.)*(0.36+ dx),0.4*DHI/2.,vflat,Rs,radi,sbr,sbr_beam)
     
     if (make_plots):
         label_size=21.5
