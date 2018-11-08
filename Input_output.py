@@ -61,7 +61,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
         file.write(' +')
         file.write('{:.3e}'.format(z[i]))
     file.write("\nINCL= +"+str(float(inc)))
-    file.write("\nPA= +0.00000E+00")
+    file.write("\nPA= +4.50000E+01")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
     file.write("\nVSYS= +1403.93164636")
@@ -125,20 +125,20 @@ BITPIX  =                  -64 / IEEE double precision floating point           
 NAXIS   =                    3 / NUMBER OF AXES                                 \
 NAXIS1  =              400.000 /Number of positions along axis 1                \
 NAXIS2  =              400.000 /Number of positions along axis 2                \
-NAXIS3  =              150.000 /Number of positions along axis 3                \
+NAXIS3  =              200.000 /Number of positions along axis 3                \
 BLOCKED =                    T / TAPE MAY BE BLOCKED                            \
-CDELT1  =         -0.000277778 /                                                \
+CDELT1  =          -0.00111111 /                                                \
 CRPIX1  =              200.000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL1  =        277.675431576 / PRIMARY REFERENCE VALUE                        \
 CTYPE1  = 'RA---TAN'           / PRIMARY AXIS NAME                              \
 CUNIT1  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
-CDELT2  =          0.000277778 /                                                \
+CDELT2  =           0.00111111 /                                                \
 CRPIX2  =              200.000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        \
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \
 CUNIT2  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
 CDELT3  =              5000.00 / PRIMARY PIXEL SEPARATION                       \
-CRPIX3  =              75.0000 / PRIMARY REFERENCE PIXEL                        \
+CRPIX3  =              100.000 / PRIMARY REFERENCE PIXEL                        \
 CRVAL3  =        1403931.64636 / PRIMARY REFERENCE VALUE                        \
 CTYPE3  = 'VELO-LSR'           / PRIMARY AXIS NAME                              \
 CUNIT3  = 'M/S     '           / PRIMARY AXIS UNITS                             \
@@ -151,7 +151,7 @@ BPA     =                    0 /                                                
 END                                                                             "
     header  = fits.header.Header.fromstring(teststr)
     
-    cube = np.zeros((120,400,400))
+    cube = np.zeros((200,400,400))
     hdu = fits.PrimaryHDU(cube,header=header)
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)

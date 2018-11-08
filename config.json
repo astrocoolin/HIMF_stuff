@@ -1,13 +1,15 @@
 {	
-	"Ranges":["masses"],
+	"Ranges":["none"],
+	"Gal_Realizations":[5],
+	"Noise_Realizations":[50],
 
 	"Make_Folder":true,
 	"Make_Output":true,
-	"Make_Cube":false,
+	"Make_Cube":true,
 
-	"beams": [2,4,6,8,16],
+	"beams": [4],
 	"incs": [60],
-	"masses": [6.0,10.5,0.1],
+	"masses": [7.5,8.5,9.5],
 	"sn":[8],
 
 	"delta":2.5

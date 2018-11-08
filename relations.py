@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib as mpl
-#mpl.use('Agg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
@@ -68,6 +68,7 @@ def Magcalc(vrot,Ropt,RHI,mstar):
 
     # Set slope from NIHAO 17 
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
+    print(slope_sparc,np.log10(mstar),mstar)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
     for i in range(0,6):
@@ -78,8 +79,8 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         rt=Ropt*func3(Mag,*rPE)
        
         # Outer edge, and half of it for the slope
-        x2 = RHI * 4./3.
-        x1 = RHI * 2./3.
+        x2 = RHI * 2.
+        x1 = RHI * 1.
         # Calculate rotation velocities at Ropt for all vt_0, rt
         vt = vt_0 * ( 1. - np.exp(-Ropt/rt) ) * ( 1. + a * Ropt/rt )
 
@@ -100,11 +101,14 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
         slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
         a = a[(slope1 > 0) & (slope2 > 0)]
+        a_poop = a
 
         # Calculate delta logv / delta log r
         # Find value of a that gives value closest to NIHAO
         slope = (slope1_log-slope2_log) / (np.log10(x2)-np.log10(x1))
         a = a[np.argmin(abs(slope - slope_sparc))]
+        #for i in range(0,len(slope)): print(a_poop[i],slope[i],slope_sparc)
+        #print(a,np.argmin(abs(slope - slope_sparc)))
 
     vt_1  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
@@ -140,13 +144,14 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
-        Mass_guess[i] = (integrate.simps(sbr*2*np.pi*radi,radi)*1000.**2.)
+        Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)
     Mj = np.argmin(abs(Mass_guess- mass))
     dx = delta[Mj]
 
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
+    print(np.log10(Mass_guess),'Mass_guess')
     if round(dx,3) <= -0.15 or round(dx,3) >= 0.151:
         while True:
             print("FAILURE",dx,0.36+dx)
@@ -164,7 +169,11 @@ def make_z(radi,vrot,sigma):
     return  z
 
 def err(errbar):
-    return np.random.normal(loc=0.,scale=errbar)
+    temp_err =np.random.normal(loc=0.,scale=errbar)
+    while temp_err > 2.5 * errbar:
+        temp_err =np.random.normal(loc=0.,scale=errbar)
+    #return(temp_err)
+    return(0.0)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -182,10 +191,10 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
     mass = np.log10(Mgas)
     if mass < split:
         slope = slope[0,0] + err(slope[0,1])
-        const = const[0,0] + err(const[0,1])+err(scatr[0,0]+err(scatr[0,1]))
+        const = const[0,0] + err(const[0,1])+err(scatr[0,0])+err(scatr[0,1])
     else:
         slope = slope[1,0] + err(slope[1,1])    
-        const = const[1,0] + err(const[1,1])+err(scatr[1,0]+err(scatr[1,1]))
+        const = const[1,0] + err(const[1,1])+err(scatr[1,0])+err(scatr[1,1])
 
     Mstar = mass * 1./slope - const/slope
     return 10.** Mstar       
@@ -243,6 +252,7 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
+    print(np.log10(Mstar))
     # Msun
 
     ######################################################
@@ -296,20 +306,20 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     sbr = sbr*1.24756e+20/(conv)
 
     #####################################################
+    # Velocity dispersion 8km/s
+    # Constant for now.
+    # Use it to calculate disk thickness based on
+    # Puche et al 1992
+    # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
+    Vdisp = 8.
+    z    = make_z(radi,vrot,Vdisp)
+    #####################################################
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
     rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
     cflux = 1.0E-6
-    #####################################################
-    # Velocity dispersion 8km/s
-    # Constant for now.
-    # Use it to calculate disk thickness based on
-    # Puche et al 1992
-    # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
-    Vdisp = 2.
-    z    = make_z(radi,vrot,Vdisp)
     ###############################################
     #f = open('distances.txt','a')
     sbr2 = sbr/1.24756e+20*(conv)
