@@ -64,7 +64,7 @@ def first_beam(outset,outname,rmax,ba,sn,inc,mass):
     hlist = fits.HDUList([hdu])
     hlist.writeto(outname,overwrite=True)
 
-def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
+def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DHI):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
@@ -96,7 +96,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
-    cube = ndimage.gaussian_filter(0.*cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
+    cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
 
     prihdr = hdulist[0].header
@@ -126,33 +126,34 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec):
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
     Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
     #print(flux)
-
-    mom_mask = np.nan * mom0
-    mom_mask = np.array([mom_mask,mom_mask,mom_mask])
-    print(np.shape(mom_mask),np.shape(mom0))
-    for i in range(0,len(mom_mask[0,0,:])):
-        for j in range(0,len(mom_mask[0,:,0])):
-            if mom0[i,j] > flux:
-                mom_mask[0,i,j] = mom0[i,j]
-                mom_mask[1,i,j] = i
-                mom_mask[2,i,j] = j
-
-    hdu = fits.PrimaryHDU(mom_mask,header=prihdr)
-    hlist = fits.HDUList([hdu])
-    hlist.writeto('mom_mask.fits',overwrite=True)
-
-    #print('determining the radius')
-    mini = int(np.min(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
-    minj = int(np.min(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
-    maxi = int(np.max(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
-    maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
-    #print(mini,minj,maxi,maxj)
-
-    dists = maxi-mini
-    #print(dists)
-    f = open('distances.txt','a')
-    f.write(str(np.log10(Mtest))+' '+str(np.log10(Mtest1))+' '+str(inc)+' '+str(dists)+" "+str(np.log10(dist))+'\n')
-    f.close()
+    
+    if (False):
+        mom_mask = np.nan * mom0
+        mom_mask = np.array([mom_mask,mom_mask,mom_mask])
+        print(np.shape(mom_mask),np.shape(mom0))
+        for i in range(0,len(mom_mask[0,0,:])):
+            for j in range(0,len(mom_mask[0,:,0])):
+                if mom0[i,j] > flux:
+                    mom_mask[0,i,j] = mom0[i,j]
+                    mom_mask[1,i,j] = i
+                    mom_mask[2,i,j] = j
+    
+        hdu = fits.PrimaryHDU(mom_mask,header=prihdr)
+        hlist = fits.HDUList([hdu])
+        hlist.writeto('mom_mask.fits',overwrite=True)
+    
+        #print('determining the radius')
+        mini = int(np.min(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
+        minj = int(np.min(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
+        maxi = int(np.max(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
+        maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
+        #print(mini,minj,maxi,maxj)
+    
+        dists = maxi-mini
+        #print(dists)
+        f = open('distances.txt','a')
+        f.write(str(np.log10(Mtest))+' '+str(np.log10(Mtest1))+' '+str(inc)+' '+str(dists)+" "+str(np.log10(dist))+" "+str(DHI)+'\n')
+        f.close()
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel

@@ -172,8 +172,8 @@ def err(errbar):
     temp_err =np.random.normal(loc=0.,scale=errbar)
     while temp_err > 2.5 * errbar:
         temp_err =np.random.normal(loc=0.,scale=errbar)
-    #return(temp_err)
-    return(0.0)
+    return(temp_err)
+    #return(0.0)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
