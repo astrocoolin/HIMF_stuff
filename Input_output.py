@@ -17,7 +17,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
     file.write("\nACTION=1")
     file.write("\nPROMPT=")
     NCORES = os.cpu_count()
-    file.write("\nNCORES=1")
+    file.write("\nNCORES="+str(NCORES))
     file.write("\n")
     file.write("\nINSET="+inset)
     file.write("\nOUTSET="+outset)
@@ -61,7 +61,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
         file.write(' +')
         file.write('{:.3e}'.format(z[i]))
     file.write("\nINCL= +"+str(float(inc)))
-    file.write("\nPA= +4.50000E+01")
+    file.write("\nPA= +0.00000E+00")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
     file.write("\nVSYS= +1403.93164636")
@@ -127,14 +127,14 @@ NAXIS1  =              400.000 /Number of positions along axis 1                
 NAXIS2  =              400.000 /Number of positions along axis 2                \
 NAXIS3  =              200.000 /Number of positions along axis 3                \
 BLOCKED =                    T / TAPE MAY BE BLOCKED                            \
-CDELT1  =          -0.00111111 /                                                \
+CDELT1  =           0.00277778 /                                                \
 CRPIX1  =              200.000 / PRIMARY REFERENCE PIXEL                        \
-CRVAL1  =        277.675431576 / PRIMARY REFERENCE VALUE                        \
+CRVAL1  =                  0.0 / PRIMARY REFERENCE VALUE                        \
 CTYPE1  = 'RA---TAN'           / PRIMARY AXIS NAME                              \
 CUNIT1  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
-CDELT2  =           0.00111111 /                                                \
+CDELT2  =           0.00277778 /                                                \
 CRPIX2  =              200.000 / PRIMARY REFERENCE PIXEL                        \
-CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        \
+CRVAL2  =                  0.0 / PRIMARY REFERENCE VALUE                        \
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \
 CUNIT2  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
 CDELT3  =              5000.00 / PRIMARY PIXEL SEPARATION                       \
@@ -167,7 +167,7 @@ def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE):
     fille.write('#  Vdisp   [km/s] = '+str(round(Vdisp,2))+'\n')
     fille.write('#  Rs       [kpc] = '+str(round(Rs,2))+'\n')
     fille.write('#  Distance [kpc] = '+str('{:.2E}'.format(dist))+'\n')
-    fille.write('#  DHI     [km/s] = '+str(round(DHI,2))+"\n")
+    fille.write('#  DHI      [kpc] = '+str(round(DHI,2))+"\n")
     fille.write('#  DlogV/DlogR    = '+str(round(slope,2))+"\n \n")
     fille.write('#  Polyex Rotation curve parameters: \n')
     fille.write('#  V(r) = v0*(1-exp(-r/rPE)) * (1+a*r/rPE): \n')
@@ -183,3 +183,4 @@ def rotfile(radi,vrot,sbr,z,END):
     fille.write("#(\") \t\t(km/s) \t\t(Jy km s^-1 as^-2) \t(kpc) \n")
     for i in range(1,END):
         fille.write(str('{:.3e}'.format(radi[i]))+'\t'+str('{:.3E}'.format(vrot[i]))+'\t'+str('{:.3E}'.format(sbr[i]))+'\t'+'\t'+str('{:.3E}'.format(z[i]))+'\n')
+

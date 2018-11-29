@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import json
 
-from science_real import first_beam, second_beam
+from science import first_beam, second_beam
 from Input_output import  deffile, rotfile, emptyfits, rothead
 from relations import *
 
@@ -85,7 +85,7 @@ for inc in inc_list:
                     outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
                             str(inc)+".SN_"+str(snr)+'.fits'
                     fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
-                            str(inc)+".SN_"+str(snr)+'.gal_'+str(j)
+                            str(inc)+".SN_"+str(snr)
                     ######################################################################
                     # Use scaling relations to set up the galaxy
                     ######################################################################
@@ -134,7 +134,7 @@ for inc in inc_list:
                             second_beam(outset,outname,END,beams,snr,inc,mass,dist,cflux/2.,beam,DHI)
                             os.system("mv "+outname+" mask.fits "+fname+'.noise'+str(num))
                         os.system("rm "+outname)
-                        os.system("rm empty.fits Logfile.log")
+                        os.system("rm empty.fits")
                     ######################################################################
                     #os.system('eog '+fname+'/VROT.png')
                     file.write(str(mass)+" "+str(DHI/2.)+" "+str(Mag)+" "+str(alpha)+\
