@@ -68,7 +68,7 @@ def Magcalc(vrot,Ropt,RHI,mstar):
 
     # Set slope from NIHAO 17 
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
-    print(slope_sparc,np.log10(mstar),mstar)
+    #print(slope_sparc,np.log10(mstar),mstar)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
     for i in range(0,6):
@@ -107,12 +107,11 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         # Find value of a that gives value closest to NIHAO
         slope = (slope1_log-slope2_log) / (np.log10(x2)-np.log10(x1))
         a = a[np.argmin(abs(slope - slope_sparc))]
-        #for i in range(0,len(slope)): print(a_poop[i],slope[i],slope_sparc)
-        #print(a,np.argmin(abs(slope - slope_sparc)))
 
     vt_1  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_1)-np.log10(vt_2))/(np.log10(x2)-np.log10(x1))
+    #print('rt',rt)
 
     return Mag,a,slope,vt_0,rt
 
@@ -151,7 +150,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    print(np.log10(Mass_guess),'Mass_guess')
+    #print(np.log10(Mass_guess),'Mass_guess')
     if round(dx,3) <= -0.15 or round(dx,3) >= 0.151:
         while True:
             print("FAILURE",dx,0.36+dx)
@@ -172,8 +171,8 @@ def err(errbar):
     temp_err =np.random.normal(loc=0.,scale=errbar)
     while temp_err > 2.5 * errbar:
         temp_err =np.random.normal(loc=0.,scale=errbar)
-    #return(temp_err)
-    return(0.0)
+    return(temp_err)
+    #return(0.0)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -213,7 +212,7 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return float(10.**(const + slope * np.log10(v)))
 
-def setup_relations(mass,beams,beam,ring_thickness,make_plots):
+def setup_relations(mass,beams,beam,ring_thickness):
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -301,7 +300,6 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     #####################################################
     # Convert SBR to Jy
     sbr,dx   = make_sbr(radi,Rs,DHI,vflat,mass)
-    #sbr_beam = ndimage.gaussian_filter(sbr,sigma=(phys_sig/delta),order = 0)
     conv=6.0574E5*1.823E18*(2.*np.pi/np.log(256.))
     sbr = sbr*1.24756e+20/(conv)
 
@@ -317,69 +315,13 @@ def setup_relations(mass,beams,beam,ring_thickness,make_plots):
     # Set the radii, rotation curve, surface brightness prof
     radi = radi     / (dist) * 3600. * (180./np.pi)
     END  = DHI      / (dist) * 3600. * (180./np.pi)
+    rPE_kpc = rPE
     rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
     cflux = 1.0E-6
     ###############################################
-    #f = open('distances.txt','a')
     sbr2 = sbr/1.24756e+20*(conv)
-    #f.write(str(np.max(sbr2[sbr2<1]))+" "+str(np.max(radi[sbr2<1]))+" "+str(DHI)+"\n")
-    #f.write(str(np.log10(dist))+' '+str(vflat)+' '+str(DHI)+' '+str(np.log10(Mstar))+' '+str(Ropt)+' ')
-    #f.close()
     
-    if (make_plots):
-        label_size=21.5
-        lw=1.5
-        mpl.rcParams['xtick.labelsize'] = label_size
-        mpl.rcParams['ytick.labelsize'] = label_size
-        mpl.rcParams['lines.linewidth'] = 3
-        mpl.rcParams['xtick.major.size'] = 10
-        mpl.rcParams['xtick.major.width'] = lw
-        mpl.rcParams['xtick.minor.size'] = 5
-        mpl.rcParams['xtick.minor.width'] = lw
-        mpl.rcParams['ytick.major.size'] = 10
-        mpl.rcParams['ytick.major.width'] = lw
-        mpl.rcParams['ytick.minor.size'] = 5
-        mpl.rcParams['ytick.minor.width'] = lw
-        mpl.rcParams['axes.linewidth'] = lw
-        mpl.rcParams['font.monospace'] = 'Courier'
-        mpl.rcParams['legend.scatterpoints'] = '3'
-        mpl.rcParams['mathtext.default'] = 'regular'
-        mpl.rcParams['xtick.direction'] = 'in'
-        mpl.rcParams['ytick.direction'] = 'in'
-
-        fig, ax = plt.subplots(figsize=(20, 10))
-        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
-        plt.plot(radi,sbr)
-        plt.xlabel('R [arcsec]',fontsize=label_size)
-        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-2}$]',fontsize=label_size)
-        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
-        minorLocator = mpl.ticker.AutoMinorLocator()
-        ax.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('SBR.png',bbox_inches='tight')
-        plt.close()
-
-        fig, ax = plt.subplots(figsize=(20, 10))
-        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3)),fontsize=label_size)
-        plt.semilogy(radi,sbr)
-        plt.xlabel('R [arcsec]',fontsize=label_size)
-        plt.ylabel('SBR [Jy km s$^{-1}$ arcsec$^{-2}$]',fontsize=label_size)
-        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
-        minorLocator = mpl.ticker.AutoMinorLocator()
-        ax.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('SBR_log.png',bbox_inches='tight')
-        plt.close()
-
-        fig, ax = plt.subplots(figsize=(20, 10))
-        plt.title('log$_{10}$ MHI [M$_{\odot}$] ='+str(np.log10(mass))+';\tlog$_{10}$ MBar [M$_{\odot}$] = '+str(round(np.log10(Mbar),3))+';\t$\Delta$log(V)/$\Delta$log(R) = '+str(round(slope,5)),fontsize=label_size)
-        plt.plot(radi,vrot)
-        plt.xlabel('R [arcsec]',fontsize=label_size)
-        plt.ylabel('Vc [km/s]',fontsize=label_size)
-        plt.axvline((DHI/2.)/ (dist) * 3600. * (180./np.pi))
-        minorLocator = mpl.ticker.AutoMinorLocator()
-        ax.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('VROT.png',bbox_inches='tight')
-        plt.close()
-    
-    rothead(MHI,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE)
-    return radi, sbr, vrot, Vdisp, z, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END
+    #return Vdisp, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END,v0,dx,Rs
+    #print('SLOPE,MSTAR,MHI',slope,Mstar,MHI)
+    return np.log10(MHI),DHI,np.log10(Mstar),Ropt,vflat,Vdisp,alpha,rPE_kpc,v0,dx,Rs,Mag,slope

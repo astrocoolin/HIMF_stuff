@@ -17,7 +17,8 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
     file.write("\nACTION=1")
     file.write("\nPROMPT=")
     NCORES = os.cpu_count()
-    file.write("\nNCORES="+str(NCORES))
+    #file.write("\nNCORES="+str(NCORES))
+    file.write("\nNCORES=14")
     file.write("\n")
     file.write("\nINSET="+inset)
     file.write("\nOUTSET="+outset)
@@ -61,7 +62,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,condisp,z,cflux):
         file.write(' +')
         file.write('{:.3e}'.format(z[i]))
     file.write("\nINCL= +"+str(float(inc)))
-    file.write("\nPA= +0.00000E+00")
+    file.write("\nPA= +4.50000E+01")
     file.write("\nXPOS= +2.77675430E+02")
     file.write("\nYPOS= +7.34348280E+01")
     file.write("\nVSYS= +1403.93164636")
@@ -129,12 +130,12 @@ NAXIS3  =              200.000 /Number of positions along axis 3                
 BLOCKED =                    T / TAPE MAY BE BLOCKED                            \
 CDELT1  =           0.00277778 /                                                \
 CRPIX1  =              200.000 / PRIMARY REFERENCE PIXEL                        \
-CRVAL1  =                  0.0 / PRIMARY REFERENCE VALUE                        \
+CRVAL1  =        277.675431576 / PRIMARY REFERENCE VALUE                        \
 CTYPE1  = 'RA---TAN'           / PRIMARY AXIS NAME                              \
 CUNIT1  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
 CDELT2  =           0.00277778 /                                                \
 CRPIX2  =              200.000 / PRIMARY REFERENCE PIXEL                        \
-CRVAL2  =                  0.0 / PRIMARY REFERENCE VALUE                        \
+CRVAL2  =        73.4348279512 / PRIMARY REFERENCE VALUE                        \
 CTYPE2  = 'DEC--TAN'           / PRIMARY AXIS NAME                              \
 CUNIT2  = 'DEGREE  '           / PRIMARY AXIS UNITS                             \
 CDELT3  =              5000.00 / PRIMARY PIXEL SEPARATION                       \
@@ -156,24 +157,27 @@ END                                                                             
     hlist = fits.HDUList([hdu])
     hlist.writeto(inset,overwrite=True)
 
-def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE):
+def rothead(mass,Mag,Vdisp,Mbar,Mstar,DHI,vflat,Rs,dist,slope,alpha,v0,rPE,Ropt,dx):
     fille = open('RC.dat',"w")
     fille.write("#  Date = "+str(datetime.datetime.now())[0:10]+"\n")
     fille.write('#  Mag  = '+str(Mag)+'\n')
-    fille.write('#  MHI   [dex Mo] = '+str(round(np.log10(mass),2))+'\n')
-    fille.write('#  Mbar  [dex Mo] = '+str(round(np.log10(Mbar),2))+'\n')
-    fille.write('#  Mstar [dex Mo] = '+str(round(np.log10(Mstar),2))+'\n')
-    fille.write('#  Vflat   [km/s] = '+str(round(vflat,2))+"\n")
-    fille.write('#  Vdisp   [km/s] = '+str(round(Vdisp,2))+'\n')
-    fille.write('#  Rs       [kpc] = '+str(round(Rs,2))+'\n')
-    fille.write('#  Distance [kpc] = '+str('{:.2E}'.format(dist))+'\n')
-    fille.write('#  DHI      [kpc] = '+str(round(DHI,2))+"\n")
-    fille.write('#  DlogV/DlogR    = '+str(round(slope,2))+"\n \n")
+    fille.write('#  MHI   [dex Mo] = '+str(round(np.log10(mass),4))+'\n')
+    fille.write('#  Mbar  [dex Mo] = '+str(round(np.log10(Mbar),4))+'\n')
+    fille.write('#  Mstar [dex Mo] = '+str(round(np.log10(Mstar),4))+'\n')
+    fille.write('#  Vflat   [km/s] = '+str(round(vflat,4))+"\n")
+    fille.write('#  Vdisp   [km/s] = '+str(round(Vdisp,4))+'\n')
+    fille.write('#  Rs       [kpc] = '+str(round(Rs,4))+'\n')
+    fille.write('#  Distance [kpc] = '+str('{:.4E}'.format(dist))+'\n')
+    fille.write('#  DHI      [kpc] = '+str(round(DHI,4))+"\n")
+    fille.write('#  DlogV/DlogR    = '+str(round(slope,4))+"\n \n")
+    fille.write('#  SBR parameters: \n')
+    fille.write('#  Ropt            = '+str(Ropt)+"\n")
+    fille.write('#  dx            = '+str(dx)+"\n")
     fille.write('#  Polyex Rotation curve parameters: \n')
     fille.write('#  V(r) = v0*(1-exp(-r/rPE)) * (1+a*r/rPE): \n')
     fille.write('#  a            = '+str(alpha)+"\n")
     fille.write('#  v0    [km/s] = '+str(v0)+"\n")
-    fille.write('#  rPE [arcsec] = '+str(np.float32(rPE))+"\n \n")
+    fille.write('#  rPE    [kpc] = '+str(np.float32(rPE))+"\n \n")
     fille.write('#  Rotation curve \n \n')
 
 def rotfile(radi,vrot,sbr,z,END):

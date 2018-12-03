@@ -68,7 +68,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
-    print('TestMass',mass,np.log10(scoop),(scoop-10.**mass)/(10.**mass)*100.,'%')
+    print('Percentage of Expected Mass:',(scoop-10.**mass)/(10.**mass)*100.,'%')
 
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
@@ -125,6 +125,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
 
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
     Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
+    print(np.log10(Mtest),np.log10(Mtest1))
     #print(flux)
     
     if (False):
@@ -142,18 +143,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
         hlist = fits.HDUList([hdu])
         hlist.writeto('mom_mask.fits',overwrite=True)
     
-        #print('determining the radius')
-        mini = int(np.min(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
-        minj = int(np.min(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
-        maxi = int(np.max(mom_mask[1,np.isfinite(mom_mask[1,:,:])]))
-        maxj = int(np.max(mom_mask[2,np.isfinite(mom_mask[2,:,:])]))
-        #print(mini,minj,maxi,maxj)
     
-        dists = maxi-mini
-        #print(dists)
-        f = open('distances.txt','a')
-        f.write(str(np.log10(Mtest))+' '+str(np.log10(Mtest1))+' '+str(inc)+' '+str(dists)+" "+str(np.log10(dist))+" "+str(DHI)+'\n')
-        f.close()
 
 def b_math(channel,noise,gauss):
     channel_noise = np.random.normal(loc=channel,scale=noise)+channel
