@@ -5,7 +5,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from astropy.io import ascii
 from pathlib import Path
-import matplotlib.gridspec as gridspec
 
 # am I plotting the data individually
 plt1 = True
@@ -83,7 +82,45 @@ for mass in (7.5,):
         V = VROT[np.isfinite(RADI)]
         R = RADI[np.isfinite(RADI)] 
         
+        # FOR STATISTICS
+        # unique radii, finite values only
+        RADI_med = np.unique(RADI)
+        RADI_med_stats = RADI_med[np.isfinite(RADI_med)]
+        
+        VROT_med_stats  = np.array([])
+        iqr_stats = np.array([])
+        devarray_stats = np.array([])
+        residuals = np.array([])
+        med_residuals = np.array([])
+        res_radi = np.array([])
 
+        for i,radius in enumerate(RADI_med_stats):
+            # All velocities at this radius
+            VROT_temp = VROT[(RADI==radius) & (np.isfinite(VROT))]
+            # median rotational velocity at this radius
+            VROT_med_stats= np.append(VROT_med_stats,
+                np.median(VROT_temp))
+
+            # All residuals at this radius
+            res_temp = VROT_temp - plyex(v0,rPE,a,radius)
+            res_radi_temp = radius*np.ones_like(res_temp)
+            # All residuals at all radii
+            residuals = np.append(residuals,res_temp)
+            res_radi  = np.append(res_radi,res_radi_temp)
+            # Median residual at this radius
+            med_residuals  = np.append(med_residuals,
+                    np.median(VROT_temp) - plyex(v0,rPE,a,radius))
+
+            if VROT_temp.size > 4  or (i < instr_len):
+                top,bot = np.percentile(VROT_temp, [75 ,25],axis=0)
+
+                iqr_stats = np.append(iqr_stats,top-bot)
+                devarray_stats = np.append(devarray_stats,np.std(VROT_temp))
+            else:
+                iqr_stats = np.append(iqr_stats,0)
+                devarray_stats = np.append(devarray_stats,0)
+        
+        
         # FOR PLOTTING
         # Find optimal spacing for the bins 
         top,bot = np.percentile(np.unique(R), [75 ,25])
@@ -92,40 +129,18 @@ for mass in (7.5,):
         dmed = np.array([])
         med = np.array([])
         res = np.array([])
+        res_med = np.array([])
         # Find iqr, and median within each of the bins
         for i,r in enumerate(frange):
             temp_med = np.median(V[(R > r) & (R < r+dxr)])
             med = np.append(med,temp_med)
-            res = np.append(res,med - plyex(v0,rPE,a,r+dxr/2.))
+            res = np.append(res,temp_med - plyex(v0,rPE,a,r+dxr/2.))
             if len(V[(R > r) & (R < r+dxr)]) > 0:
                 top,bot = np.percentile(V[(R > r) & (R < r+dxr)], [75 ,25])
                 iqr = top-bot
                 dmed = np.append(dmed,iqr)
             else :
                 dmed = np.append(dmed,0)
-
-        # FOR STATISTICS
-            # unique radii, finite values only
-            RADI_med = np.unique(RADI)
-            RADI_med_stats = RADI_med[np.isfinite(RADI_med)]
-        
-            VROT_med_stats  = np.array([])
-            iqr_stats = np.array([])
-            devarray_stats = np.array([])
-            for i,radius in enumerate(RADI_med):
-                # median rotational velocity at each radius
-                VROT_temp = VROT[(RADI==radius) & (np.isfinite(VROT))]
-                VROT_med_stats= np.append(VROT_med_stats,
-                    np.median(VROT_temp))
-
-                if VROT_temp.size > 4  or (i < instr_len):
-                    top,bot = np.percentile(VROT_temp, [75 ,25],axis=0)
-
-                    iqr_stats = np.append(iqr_stats,top-bot)
-                    devarray_stats = np.append(devarray_stats,np.std(VROT_temp))
-                else:
-                    iqr_stats = np.append(iqr_stats,0)
-                    devarray_stats = np.append(devarray_stats,0)
 
         # FOR BIAS AND CHI2
         Bias = np.array([])
@@ -137,110 +152,51 @@ for mass in (7.5,):
             polyex_discrete = v0 * (1. - np.exp(-RADI_temp/rPE)) * (1. + RADI_temp * a /rPE )
             B = np.array([])
             sig = np.array([])
-            #print(VROT[i][np.isfinite(VROT[i])],polyex_discrete,i)
 
             for j,r in enumerate(RADI_temp):
                 if r < R_HI5:
                     B = np.append(B,VROT[i][j] - polyex_discrete[j])
-                    #print(B[i],sig[i],i)
                     top,bot = np.percentile(VROT[(RADI==r) & np.isfinite(VROT)], [75 ,25],axis=0)
                     sig = np.append(sig,top-bot)
             sig = sig[np.isfinite(B)]
             B = B[np.isfinite(B)]
             
-            print(i)
             Bias = np.append(Bias,np.sum((C*B/sig)[np.isfinite(C*B/sig)]))
             Chi2 = np.append(Chi2,np.sum((C*B**2./sig**2.)[np.isfinite(C*B**2./sig**2.)]))
 
         Total_Bias = np.sum(Bias)
         Total_Chi = np.sum(Chi2)
        
-
-#        polyex_discrete = polyex_discrete(v0,rPE,a,RADI_med_stats)
-#
-#        residual = VROT_med_stats-polyex_discrete
-#        residual_int = np.zeros_like(residual)*np.nan
-#        error_int = np.zeros_like(residual)*np.nan
-#
-#        for i, r in enumerate(residual):
-#                residual_int[i] = np.sum(residual[0:i+1])
-#                error_int[i] = np.sum(iqr[0:i+1])
-#        
-#        delta = np.array([])
-#
-#        for i,r in enumerate(RADI_med):
-#            if r <= R_HI5:
-#                delta = np.append(delta,VROT_med_stats[i] -polyex[RADI_2 ==r])
-#        
-#        alldelta = np.append(alldelta,delta)
-#        alldelta_r = np.append(alldelta_r,RADI_med_stats[RADI_med_stats <= R_HI5]/R_HI5)
         xy.append([[Total_Chi,Total_Bias]])
-       
-        if False:
-            if namestr == "ba_6.0.mass_7.0.inc_10.0.SN_8.0.noise":
-                for i in range(0,50):
-                  if len(VROT[i][np.isfinite(VROT[i])]) != 0:
-                    #print(fname[i])
-                    print(RADI[i][np.isfinite(VROT[i])],i)
-                    print(VROT[i][np.isfinite(VROT[i])])
-                    #print(i)
 
+
+        fig = plt.figure(figsize=(12,4))
+        ax1=fig.add_subplot(1, 2, 1)
+        ax2=fig.add_subplot(1, 2, 2)
+
+        ax1.scatter(RADI,VROT, lw = 2.5, label = 'Recovered Curve',marker='x',alpha=0.25,color='blue')
+        left, right = ax1.get_xlim()
+        ax1.set_xlim(left,right)
+        for i,r in enumerate(frange):
+            print(i,r,med[i],namestr)
+            dx_ax= dxr / (right - left)
+            r_ax = r / (right - left)
+            ax1.axhspan(ymin=med[i]-dmed[i],ymax=med[i]+dmed[i],xmin=r_ax,xmax=r_ax+dx_ax,color='blue',alpha=0.45)
+            ax1.axhline(y=med[i],xmin=r_ax,xmax=r_ax+dx_ax,alpha=0.45)
         
-            fig=plt.figure(figsize=(12,8))
-            gs0 = gridspec.GridSpec(1, 2)
-            gs00 = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs0[0])
+        ax2.scatter(res_radi,residuals,color='blue',alpha=0.25)
+        ax2.plot(frange+dxr/2.,res,color='blue')
+        ax2.fill_between(frange+dxr/2.,res+dmed,res-dmed,color='blue',alpha=0.4)
+        ax1.plot(RADI_2,polyex, lw = 2.5 , label = 'Input Curve',color='red')
+        ax1.set_ylabel('Vrot (km/s)')
+        ax1.set_xlabel('Radius (arcsec)')
+        ax1.axvline(R_HI5)
+        ax1.legend()
         
-            ax1 = plt.Subplot(fig, gs00[0:2, :])
-            fig.add_subplot(ax1)
-            ax3 = plt.Subplot(fig, gs00[2, :])
-            fig.add_subplot(ax3)
         
-            ax1.scatter(RADI,VROT, lw = 2.5, label = 'Recovered Curve')
-            #ax1.fill_between(RADI_bind, VROT_med-iqr, VROT_med+iqr,alpha=0.4)
-            ax1.plot(RADI_2,polyex, lw = 2.5 , label = 'Input Curve')
-            ax1.set_ylabel('Vrot (km/s)')
-            ax1.set_xlabel('Radius (arcsec)')
-        
-            ax2 = ax1.twiny()
-            plt.title(namestr+" \nChi^2 = "+str(Total_Chi),y=1.10)
-            ax2.set_xlabel('\n Radius (kpc)')
-        
-            ax1.axvline(R_HI5)
-            ax1.legend()
-            N=(len(np.unique(RADI[np.isfinite(RADI)])))
-            ax3.hist(RADI[np.isfinite(RADI)],N,facecolor='white',edgecolor='#1f77b4')
-            ax3.hist(RADI[np.isfinite(RADI)],N,facecolor='#1f77b4',edgecolor='#1f77b4',alpha=0.1)
-            ax3.set_ylabel('Number of Points \n per Radial Bin')
-            ax3.set_xlabel('Radius (arcsec)')
-  #          ax3.set_xlim(0,DHI)
-        
-            gs01 = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs0[1])
-            gx1 = plt.Subplot(fig, gs01[0:2, :])
-            fig.add_subplot(gx1)
-            gx2 = plt.Subplot(fig, gs01[2, :])
-            fig.add_subplot(gx2)
-        
-            #gx1.plot(RADI_bind,residual)
-            #gx1.fill_between(RADI_bind, residual-iqr, residual+iqr,alpha=0.4)
-            #gx1.fill_between(RADI_bind, residual, 0 ,where= residual>0,alpha=0.4,color='green',interpolate=True)
-            #gx1.fill_between(RADI_bind, residual, 0 ,where= residual<0,alpha=0.4,color='red',interpolate=True)
-            #gx1.axvline(R_HI5)
-   #         gx1.set_xlim(0,DHI)
-        
-            #gx1.set_title('"Bias"='+str(Total_Bias))
-        
-            #gx2.plot(RADI_bind,residual_int)
-    #        gx2.set_xlim(0,DHI)
-          #  gx2.axvline(R_HI5)
-        
-            #gx2.fill_between(RADI_bind,residual_int, 0 \
-            #        ,where= residual_int>0,alpha=0.4,color='green',interpolate=True)
-            #gx2.fill_between(RADI_bind,residual_int, 0 \
-            #        ,where= residual_int<0,alpha=0.4,color='red',interpolate=True)
-        
-            plt.tight_layout()
-            plt.savefig(namestr+'plot.png',bbox_inches='tight')
-            plt.close()
+        plt.tight_layout()
+        plt.savefig(namestr+'plot.png',bbox_inches='tight')
+        plt.close()
 
 
 R = alldelta_r
@@ -312,8 +268,6 @@ for i,r in enumerate(frange):
     else :
         dmed = np.append(dmed,0)
         
-
-        #plt.axhspan(ymin=temp_med-iqr, ymax=temp_med+iqr, xmin=r, xmax=r+dxr, color='red',alpha=0.45,zorder=1,edgecolor='None')
 
 plt.plot(medR,med)
 plt.errorbar(medR,med,yerr=dmed)
