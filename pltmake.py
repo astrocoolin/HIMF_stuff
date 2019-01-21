@@ -3,8 +3,11 @@ import numpy as np
 import matplotlib as mpl
 #mpl.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib.collections import *
 from astropy.io import ascii
 from pathlib import Path
+from scipy import optimize
 
 # am I plotting the data individually
 plt1 = True
@@ -19,6 +22,13 @@ xy = []
 def plyex(v0,rPE,a,R):
     return v0 * (1. - np.exp(-R/rPE)) * (1. + R * a /rPE )
 
+def rect(axob,xmin,ymin,dx,dy):
+    rob=[]
+    rob.append(Rectangle((xmin,ymin),dx,dy))
+    coll=PatchCollection(rob, zorder=1,alpha=0.45,color='C0')
+    axob.add_collection(coll)
+
+    
 # all galaxies
 for mass in (7.5,):
   for ba in (4,5,6,8,):
@@ -38,6 +48,11 @@ for mass in (7.5,):
         rPE = float(lines[19][18:])
         DHI = float(lines[9][19:])
         Distance = float(lines[8][19:])
+
+        vflat = float(lines[5][19:])
+        Rs = float(lines[7][19:])
+        dx = float(lines[14][18:])
+
         infile.close()
         
         # in arcseconds
@@ -129,12 +144,13 @@ for mass in (7.5,):
         dmed = np.array([])
         med = np.array([])
         res = np.array([])
-        res_med = np.array([])
         # Find iqr, and median within each of the bins
         for i,r in enumerate(frange):
             temp_med = np.median(V[(R > r) & (R < r+dxr)])
             med = np.append(med,temp_med)
-            res = np.append(res,temp_med - plyex(v0,rPE,a,r+dxr/2.))
+            res_med = np.median(residuals[(res_radi > r) & (res_radi < r+dxr)])
+            if not np.isfinite(res_med): print(residuals[(res_radi > r) & (res_radi < r+dxr)])
+            res = np.append(res,res_med)
             if len(V[(R > r) & (R < r+dxr)]) > 0:
                 top,bot = np.percentile(V[(R > r) & (R < r+dxr)], [75 ,25])
                 iqr = top-bot
@@ -156,7 +172,8 @@ for mass in (7.5,):
             for j,r in enumerate(RADI_temp):
                 if r < R_HI5:
                     B = np.append(B,VROT[i][j] - polyex_discrete[j])
-                    top,bot = np.percentile(VROT[(RADI==r) & np.isfinite(VROT)], [75 ,25],axis=0)
+                    top,bot = np.percentile(VROT[(RADI==r) 
+                        & np.isfinite(VROT)], [75 ,25],axis=0)
                     sig = np.append(sig,top-bot)
             sig = sig[np.isfinite(B)]
             B = B[np.isfinite(B)]
@@ -169,34 +186,54 @@ for mass in (7.5,):
        
         xy.append([[Total_Chi,Total_Bias]])
 
-
         fig = plt.figure(figsize=(12,4))
         ax1=fig.add_subplot(1, 2, 1)
         ax2=fig.add_subplot(1, 2, 2)
 
-        ax1.scatter(RADI,VROT, lw = 2.5, label = 'Recovered Curve',marker='x',alpha=0.25,color='blue')
-        left, right = ax1.get_xlim()
-        ax1.set_xlim(left,right)
+        ax1.scatter(RADI,VROT, lw = 2.5, label = 'Recovered Curve',
+                marker='x',alpha=0.25,color='C0',zorder=2)
+        ax2.scatter(res_radi,residuals,color='C0',alpha=0.25,zorder=2)
+
         for i,r in enumerate(frange):
-            print(i,r,med[i],namestr)
-            dx_ax= dxr / (right - left)
-            r_ax = r / (right - left)
-            ax1.axhspan(ymin=med[i]-dmed[i],ymax=med[i]+dmed[i],xmin=r_ax,xmax=r_ax+dx_ax,color='blue',alpha=0.45)
-            ax1.axhline(y=med[i],xmin=r_ax,xmax=r_ax+dx_ax,alpha=0.45)
-        
-        ax2.scatter(res_radi,residuals,color='blue',alpha=0.25)
-        ax2.plot(frange+dxr/2.,res,color='blue')
-        ax2.fill_between(frange+dxr/2.,res+dmed,res-dmed,color='blue',alpha=0.4)
-        ax1.plot(RADI_2,polyex, lw = 2.5 , label = 'Input Curve',color='red')
+            rect(ax1,r,med[i]-dmed[i],dxr,2*dmed[i])
+            rect(ax2,r,res[i]-dmed[i],dxr,2*dmed[i])
+
+            ax1.hlines(y=med[i],xmin=r,xmax=r+dxr,alpha=0.45,color='blue',lw=1.5)
+            ax2.hlines(y=res[i],xmin=r,xmax=r+dxr,alpha=0.45,color='blue',lw=1.5)
+
+        ax2.axhline(y=0,color='red',alpha=0.45,lw=2.5,zorder=3)
+        ax1.plot(RADI_2,polyex, lw = 2.5 , label = 'Input Curve',color='red',zorder=3)
         ax1.set_ylabel('Vrot (km/s)')
         ax1.set_xlabel('Radius (arcsec)')
+        print('b4')
+        print(v0,a,rPE)
+        print(DHI,dx,Rs,vflat)
+        def halfsolar(r):
+            sig1 = np.exp(-((r-0.4*DHI/2.)/(np.sqrt(2)*(dx+0.36)*DHI/2.))**2.)
+            sig2 = (np.sqrt(vflat/120.)-1.)*np.exp(-r/Rs)
+            sig = sig1 - sig2
+            R_HI = DHI/2.
+            SBR_R = np.exp(-((R_HI-0.4*DHI/2.)/(np.sqrt(2)*(dx+0.36)*DHI/2.))**2.)-(np.sqrt(vflat/120.)-1.)*np.exp(-R_HI/Rs)
+
+
+            return sig / SBR_R
+        sol = optimize.root(halfsolar,[0,0],method='hybr')
+
+
+        print('aft')
+
         ax1.axvline(R_HI5)
         ax1.legend()
         
+
         
         plt.tight_layout()
         plt.savefig(namestr+'plot.png',bbox_inches='tight')
         plt.close()
+
+        alldelta_r = np.append(alldelta_r,RADI_med_stats/DHI)
+        print(DHI)
+        alldelta = np.append(alldelta,med_residuals)
 
 
 R = alldelta_r
