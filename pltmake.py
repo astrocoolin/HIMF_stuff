@@ -22,6 +22,12 @@ xy = []
 def plyex(v0,rPE,a,R):
     return v0 * (1. - np.exp(-R/rPE)) * (1. + R * a /rPE )
 
+def zeros(diam, halfsolar):
+    x = diam
+    while (abs(halfsolar(x) - 0.5) > 0.001):
+        x = x + 0.001
+    return x
+
 def rect(axob,xmin,ymin,dx,dy):
     rob=[]
     rob.append(Rectangle((xmin,ymin),dx,dy))
@@ -30,7 +36,7 @@ def rect(axob,xmin,ymin,dx,dy):
 
     
 # all galaxies
-for mass in (7.5,):
+for mass in (8.3,):
   for ba in (4,5,6,8,):
       for inc in (10,35,65,80,):
         namestr = "ba_"+str(ba)+".0.mass_"+str(mass)+".inc_"+str(inc)+".0.SN_8.0.noise"
@@ -63,11 +69,27 @@ for mass in (7.5,):
         sbr = ascii.read(fname[0]+"/RC.dat")['col3'] 
         conv=6.0574E5*1.823E18*(2.*np.pi/np.log(256.))
         sbr = sbr/1.24756e+20*(conv)
-        R_HI5 = r_prof[np.argmin(abs(sbr - 0.5))]
+        #print(DHI)
         DHI = ((DHI/2.) / Distance)*3600.*180./np.pi
+        
+        def halfsolar(r):
+            sig1 = np.exp(-((r-0.4*DHI)/(np.sqrt(2)*(dx+0.36)*DHI))**2.)
+            sig2 = (np.sqrt(vflat/120.)-1.)*np.exp(-r/Rs)
+            sig = sig1 - sig2
+            R_HI = DHI
+            SBR_R = np.exp(-((R_HI-0.4*DHI)/(np.sqrt(2)*(dx+0.36)*DHI))**2.)-(np.sqrt(vflat/120.)-1.)*np.exp(-R_HI/Rs)
+
+            return sig / SBR_R
+        
+        R_HI5 = zeros(DHI,halfsolar)
+        #print(DHI,R_HI5)
+        
+        #R_HI5 = r_prof[np.argmin(abs(sbr - 0.5))]
         
         VROT = np.zeros([50,50])*np.nan
         RADI = np.zeros([50,50])*np.nan
+        INCL = np.zeros([50,50])*np.nan
+        deltaI = 0
         
         instr = 0
         instr_len = 0
@@ -87,8 +109,13 @@ for mass in (7.5,):
                         RADI[num,0:len(instr)] = instr
                         if len(instr) > instr_len:
                             instr_len = len(instr)
+                    if   'INCL' in line and "+" in line and "ERR" not in line and "_2" not in line:
+                        instr = np.array(np.float32(line.split()[1:]))
+                        #deltaI = max((np.max(instr[np.isfinite(instr)]) - np.min(instr[np.isfinite(instr)])),deltaI)
+                        INCL[num,0:len(instr[:-1])]=instr[:-1]
+
         
-        
+        print(deltaI,'deltaI',valu) 
         # smooth radii for analytical ployex. This is an array
         RADI_2 = np.arange(0,np.max(RADI[np.isfinite(RADI)])+0.1,0.1)
         polyex = v0 * (1. - np.exp(-RADI_2/rPE)) * (1. + RADI_2 * a /rPE )
@@ -193,6 +220,13 @@ for mass in (7.5,):
         ax1.scatter(RADI,VROT, lw = 2.5, label = 'Recovered Curve',
                 marker='x',alpha=0.25,color='C0',zorder=2)
         ax2.scatter(res_radi,residuals,color='C0',alpha=0.25,zorder=2)
+        textstr = '\n'.join((
+            r'$\mathrm{Max (i)}=%.2f$' % (np.max(INCL[np.isfinite(INCL)]),),
+            r'$\mathrm{Min (i)}=%.2f$' % (np.min(INCL[np.isfinite(INCL)]),),
+            r'$\mathrm{Med (i)}=%.2f$' % (np.median(INCL[np.isfinite(INCL)]), )))
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax2.text(0.70, 0.95, textstr, transform=ax2.transAxes, fontsize=14,
+        verticalalignment='top', bbox=props)
 
         for i,r in enumerate(frange):
             rect(ax1,r,med[i]-dmed[i],dxr,2*dmed[i])
@@ -205,34 +239,15 @@ for mass in (7.5,):
         ax1.plot(RADI_2,polyex, lw = 2.5 , label = 'Input Curve',color='red',zorder=3)
         ax1.set_ylabel('Vrot (km/s)')
         ax1.set_xlabel('Radius (arcsec)')
-        print('b4')
-        print(v0,a,rPE)
-        print(DHI,dx,Rs,vflat)
-        def halfsolar(r):
-            sig1 = np.exp(-((r-0.4*DHI/2.)/(np.sqrt(2)*(dx+0.36)*DHI/2.))**2.)
-            sig2 = (np.sqrt(vflat/120.)-1.)*np.exp(-r/Rs)
-            sig = sig1 - sig2
-            R_HI = DHI/2.
-            SBR_R = np.exp(-((R_HI-0.4*DHI/2.)/(np.sqrt(2)*(dx+0.36)*DHI/2.))**2.)-(np.sqrt(vflat/120.)-1.)*np.exp(-R_HI/Rs)
-
-
-            return sig / SBR_R
-        sol = optimize.root(halfsolar,[0,0],method='hybr')
-
-
-        print('aft')
 
         ax1.axvline(R_HI5)
         ax1.legend()
-        
-
         
         plt.tight_layout()
         plt.savefig(namestr+'plot.png',bbox_inches='tight')
         plt.close()
 
         alldelta_r = np.append(alldelta_r,RADI_med_stats/DHI)
-        print(DHI)
         alldelta = np.append(alldelta,med_residuals)
 
 
@@ -242,7 +257,6 @@ Y = alldelta
 med = np.array([])
 dmed = np.array([])
 medR = np.array([])
-
 
 
 fig=plt.figure(figsize=(12,8))
@@ -291,7 +305,7 @@ plt.xlabel('R/R_HI',fontsize=21.5)
 plt.ylabel('$\Delta V_{rot}$ [km s$^{-1}$]',fontsize=21.5)
 iqr = np.array([])
 frange = np.arange(0,np.max(R),dxr)
-print(frange)
+#print(frange)
 
 for i,r in enumerate(frange):
     temp_med = np.median(Y[(R > r) & (R < r+dxr)])
@@ -314,7 +328,7 @@ plt.xlim(.95*np.min(R),np.max(R)*1.05)
 plt.ylim(.95*np.min(Y),np.max(Y)*1.05)
 #plt.hlines(y = med_delta,xmin = med_deltaR-0.09,xmax = med_deltaR+0.09,alpha=0.5)
 
-print(medR,med)
+#print(medR,med)
 
 plt.savefig('test2.png',bbox_inches='tight')
 plt.close()
