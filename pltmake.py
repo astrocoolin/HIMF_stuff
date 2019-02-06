@@ -93,9 +93,11 @@ for mass in (7.5, 8.3, 9.2, 10.5):
         
         instr = 0
         instr_len = 0
+        success = 0
         for num,valu in enumerate(fname):
             existcheck = Path(valu+"/Finalmodel/Finalmodel.def")
             if existcheck.is_file():
+                success = success+1
                 outfile = open(valu+"/Finalmodel/Finalmodel.def")
             
                 lines = outfile.readlines()
@@ -211,8 +213,8 @@ for mass in (7.5, 8.3, 9.2, 10.5):
 
             for j,r in enumerate(RADI_temp):
                 if r < R_HI5:
-                    B = np.append(B,VROT[i][j] - polyex_discrete[j])
-                    B_f = np.append(B_f,VROT_f[i][j] - polyex_discrete[j])
+                    B = np.append(B,(VROT[i][j] - polyex_discrete[j])/polyex_discrete[j])
+                    B_f = np.append(B_f,(VROT_f[i][j] - polyex_discrete[j])/polyex_discrete[j])
 
                     top,bot = np.percentile(VROT[(RADI==r) 
                         & np.isfinite(VROT)], [75 ,25],axis=0)
@@ -235,13 +237,14 @@ for mass in (7.5, 8.3, 9.2, 10.5):
             Chi2_f = np.append(Chi2_f,np.sum((C*B_f**2./sig_f**2.)[np.isfinite(C*B_f**2./sig_f**2.)]))
 
         Total_Bias = np.sum(Bias)
-        Total_Chi = np.sum(Chi2)
+        Total_Chi = np.log10(np.sum(Chi2))
         
         Total_Bias_f = np.sum(Bias_f)
-        Total_Chi_f = np.sum(Chi2_f)
+        Total_Chi_f = np.log10(np.sum(Chi2_f))
        
-        xy.append([[Total_Chi,Total_Bias,mass,ba,inc]])
-        xy_f.append([[Total_Chi_f,Total_Bias_f,mass,ba,inc]])
+        xy.append([[Total_Chi,Total_Bias,mass,ba,inc,100.*(1. - success/50.)]])
+        xy_f.append([[Total_Chi_f,Total_Bias_f,mass,ba,inc,100.*(1. - success/50.)]])
+
         if plt1:
             fig = plt.figure(figsize=(12,8))
             ax1=fig.add_subplot(2, 2, 1)
@@ -307,42 +310,115 @@ med = np.array([])
 dmed = np.array([])
 medR = np.array([])
 
-fig1,ax1=plt.subplots(figsize=(12,8))
+fig, axes =plt.subplots(2,2,sharey=True,sharex=True, figsize=(12,8))
 xy = np.array(xy)
 
-CB1 = plt.scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,2],cmap='coolwarm')
-cbar = fig1.colorbar(CB1)
+CB1 = axes[0,0].scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,2],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB1,ax=axes[0,0])
+x1,x2 = axes[0,0].get_xlim()
+y1,y2 = axes[0,0].get_ylim()
+axes[0,0].set_xlim(x1,x2)
+axes[0,0].set_ylim(y1,y2)
+axes[0,0].set_xlabel('"Bias"',fontsize=21.5)
+axes[0,0].set_ylabel('Chi2',fontsize=21.5)
+axes[0,0].xaxis.set_tick_params(which='both', labelbottom=True)
 
-x1,x2 = ax1.get_xlim()
-y1,y2 = ax1.get_ylim()
+CB2 = axes[0,1].scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,3],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB2,ax=axes[0,1])
+axes[0,1].set_xlabel('"Bias"',fontsize=21.5)
+axes[0,1].set_ylabel('Chi2',fontsize=21.5)
+axes[0,1].xaxis.set_tick_params(which='both', labelbottom=True)
 
-ax1.set_ylim(y1,y2)
-ax1.set_xlim(x1,x2)
+CB3 = axes[1,0].scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,4],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB3,ax=axes[1,0])
+axes[1,0].set_xlabel('"Bias"',fontsize=21.5)
+axes[1,0].set_ylabel('Chi2',fontsize=21.5)
+axes[1,0].xaxis.set_tick_params(which='both', labelbottom=True)
 
-plt.xscale('symlog')
-plt.yscale('symlog')
+CB4 = axes[1,1].scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,5],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB4,ax=axes[1,1])
+axes[1,1].set_xlabel('"Bias"',fontsize=21.5)
+axes[1,1].set_ylabel('Chi2',fontsize=21.5)
+axes[1,1].xaxis.set_tick_params(which='both', labelbottom=True)
+
+#plt.xscale('symlog')
+#plt.yscale('log')
 plt.xlabel('"Bias"',fontsize=21.5)
 plt.ylabel('Chi2',fontsize=21.5)
 plt.savefig('ChiBias.png',bbox_inches='tight')
 plt.close()
 
-fig2,ax2=plt.subplots(figsize=(12,8))
-xy = np.array(xy_f)
-#for i in range(0,len(xy)):
-CB2 = plt.scatter((xy[:,0,1]),(xy[:,0,0]),c=xy[:,0,2],cmap='coolwarm')
+fig, axes =plt.subplots(2,2,sharey=True,sharex=True, figsize=(12,8))
+xy_f = np.array(xy_f)
 
-ax2.set_ylim(y1,y2)
-ax2.set_xlim(x1,x2)
+CB1 = axes[0,0].scatter((xy_f[:,0,1]),(xy_f[:,0,0]),c=xy_f[:,0,2],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB1,ax=axes[0,0])
+axes[0,0].set_xlim(x1,x2)
+axes[0,0].set_ylim(y1,y2)
+axes[0,0].set_xlabel('"Bias"',fontsize=21.5)
+axes[0,0].set_ylabel('Chi2',fontsize=21.5)
+axes[0,0].xaxis.set_tick_params(which='both', labelbottom=True)
 
-cbar = fig2.colorbar(CB2)
+CB2 = axes[0,1].scatter((xy_f[:,0,1]),(xy_f[:,0,0]),c=xy_f[:,0,3],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB2,ax=axes[0,1])
+axes[0,1].set_xlabel('"Bias"',fontsize=21.5)
+axes[0,1].set_ylabel('Chi2',fontsize=21.5)
+axes[0,1].xaxis.set_tick_params(which='both', labelbottom=True)
 
-plt.xscale('symlog')
-plt.yscale('symlog')
-plt.xlabel('"Bias"',fontsize=21.5)
-plt.ylabel('Chi2',fontsize=21.5)
+CB3 = axes[1,0].scatter((xy_f[:,0,1]),(xy_f[:,0,0]),c=xy_f[:,0,4],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB3,ax=axes[1,0])
+axes[1,0].set_xlabel('"Bias"',fontsize=21.5)
+axes[1,0].set_ylabel('Chi2',fontsize=21.5)
+axes[1,0].xaxis.set_tick_params(which='both', labelbottom=True)
+
+CB4 = axes[1,1].scatter((xy_f[:,0,1]),(xy_f[:,0,0]),c=xy_f[:,0,5],cmap='coolwarm',marker='x')
+cbar = fig.colorbar(CB4,ax=axes[1,1])
+axes[1,1].set_xlabel('"Bias"',fontsize=21.5)
+axes[1,1].set_ylabel('Chi2',fontsize=21.5)
+axes[1,1].xaxis.set_tick_params(which='both', labelbottom=True)
+
+#plt.xscale('symlog')
+#plt.yscale('log10')
+#axes[1,1].set_yscale('log')
 plt.savefig('ChiBias_f.png',bbox_inches='tight')
 plt.close()
 
+fig, ax =plt.subplots(figsize=(12,8))
+xy_f = np.array(xy_f)
+print('plotting delta')
+for i,y in enumerate(xy_f[:,0,1]):
+    dx = xy_f[i,0,1] - xy[i,0,1]
+    dy = xy_f[i,0,0] - xy[i,0,0]
+    ax.arrow(xy[i,0,1],xy[i,0,0],dx=dx,dy=dy,head_width=0.15,facecolor='red')
+    ax.scatter((xy[:,0,1]),(xy[:,0,0]),color='blue',marker='x')
+
+ax.set_xlim(x1,x2)
+ax.set_ylim(y1,y2)
+ax.set_xlabel('"Bias"',fontsize=21.5)
+ax.set_ylabel('Chi2',fontsize=21.5)
+plt.savefig('ChiBias_delta.png',bbox_inches='tight')
+plt.close()
+
+fig, ax =plt.subplots(figsize=(12,8))
+xy_f = np.array(xy_f)
+print('plotting delta')
+for i,y in enumerate(xy[:,0,1]):
+    if (xy_f[i,0,1] - xy[i,0,1] > 0 and xy[i,0,1] > 0) or \
+            (xy_f[i,0,1] - xy[i,0,1] < 0 and xy[i,0,1] < 0):
+        dx = xy_f[i,0,1] - xy[i,0,1]
+        dy = xy_f[i,0,0] - xy[i,0,0]
+        ax.arrow(xy[i,0,1],xy[i,0,0],dx=dx,dy=dy,head_width=0.15,facecolor='red')
+        ax.scatter((xy[:,0,1]),(xy[:,0,0]),color='blue',marker='x')
+
+ax.set_xlim(x1,x2)
+ax.set_ylim(y1,y2)
+ax.set_xlabel('"Bias"',fontsize=21.5)
+ax.set_ylabel('Chi2',fontsize=21.5)
+plt.savefig('ChiBias_delta_g.png',bbox_inches='tight')
+plt.close()
+
+np.save('xy.bin',xy)
+np.save('xy_fixed.bin',xy_f)
 
 label_size=21.5
 lw=1.5
