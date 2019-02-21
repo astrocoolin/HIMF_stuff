@@ -19,6 +19,7 @@ alldelta_r = np.array([])
 # array of statistical measures
 xy = []
 xy_f = []
+
         
 def plyex(v0,rPE,a,R):
     return v0 * (1. - np.exp(-R/rPE)) * (1. + R * a /rPE )
@@ -115,21 +116,22 @@ for mass in (7.5, 8.3, 9.2, 10.5):
                         instr = np.array(np.float32(line.split()[1:]))
                         #INCL[num,0:len(instr[:-1])]=instr[:-1]
                         INCL[num,0:len(instr)]=instr
-        
-
 
         # smooth radii for analytical ployex. This is an array
         if len(RADI[np.isfinite(RADI)]) == 0: continue
         #print(RADI)
         #print(np.max(RADI[np.isfinite(RADI)]),saveloc)
+
         RADI_2 = np.arange(0,np.max(RADI[np.isfinite(RADI)])+0.1,0.1)
         polyex = v0 * (1. - np.exp(-RADI_2/rPE)) * (1. + RADI_2 * a /rPE )
 
         # This does the data for the plot of all rotation curves
         V = VROT[np.isfinite(RADI)]
+
         R = RADI[np.isfinite(RADI)]
         I = INCL[np.isfinite(RADI)]
         VROT_f = VROT * np.sin(INCL*np.pi/180.)/np.sin(inc*np.pi/180.)
+
         V2 = V*np.sin(I*np.pi/180.)/np.sin(inc*np.pi/180.)
         
         # FOR STATISTICS
@@ -208,13 +210,17 @@ for mass in (7.5, 8.3, 9.2, 10.5):
             B = np.array([])
             sig = np.array([])
 
+
             B_f = np.array([])
             sig_f = np.array([])
+
 
             for j,r in enumerate(RADI_temp):
                 if r < R_HI5:
                     B = np.append(B,VROT[i][j] - polyex_discrete[j])
+
                     B_f = np.append(B_f,VROT_f[i][j] - polyex_discrete[j])
+
 
                     top,bot = np.percentile(VROT[(RADI==r) 
                         & np.isfinite(VROT)], [75 ,25],axis=0)
@@ -225,10 +231,11 @@ for mass in (7.5, 8.3, 9.2, 10.5):
                     sig_f = np.append(sig_f,top-bot)
 
             sig_f = sig_f[np.isfinite(B_f)]
-            sig = sig[np.isfinite(B)]
+
 
             B = B[np.isfinite(B)]
             B_f = B_f[np.isfinite(B_f)]
+
             
             Bias = np.append(Bias,np.sum((C*B/sig)[np.isfinite(C*B/sig)]))
             Chi2 = np.append(Chi2,np.sum((C*B**2./sig**2.)[np.isfinite(C*B**2./sig**2.)]))
@@ -238,6 +245,7 @@ for mass in (7.5, 8.3, 9.2, 10.5):
 
         Total_Bias = np.sum(Bias)
         Total_Chi = np.sum(Chi2)
+
         
         Total_Bias_f = np.sum(Bias_f)
         Total_Chi_f = np.sum(Chi2_f)
@@ -297,6 +305,7 @@ for mass in (7.5, 8.3, 9.2, 10.5):
             plt.tight_layout()
             plt.savefig(saveloc+'plot.png',bbox_inches='tight')
             plt.close()
+
 
         alldelta_r = np.append(alldelta_r,RADI_med_stats/DHI)
         alldelta = np.append(alldelta,med_residuals)
@@ -369,6 +378,7 @@ cbar = fig.colorbar(CB4,ax=axes[1,1])
 axes[1,1].set_xlabel('"Bias"',fontsize=21.5)
 axes[1,1].set_ylabel('Chi2',fontsize=21.5)
 axes[1,1].xaxis.set_tick_params(which='both', labelbottom=True)
+
 
 plt.xscale('symlog')
 plt.yscale('symlog')

@@ -68,6 +68,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
+    print(np.log10(scoop),mass)
     print('Percentage of Expected Mass:',(scoop-10.**mass)/(10.**mass)*100.,'%')
 
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel

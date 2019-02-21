@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
 import matplotlib.pyplot as plt
 import astropy.units as u
 from scipy.optimize import curve_fit
@@ -13,13 +12,14 @@ def func(x,a,b,c,d):
     # Fit for V0
     return a*np.exp(-x*b-c) +d*x
 
-def func2(x,b,c):
+def func2(x,m,b):
     # Linear fit for A
-    return b*x + c
+    return m*x + b
 
-def func3(x,a,b):
+def func3(x,m,b):
     # Fit for rPE
-    return a*np.log10(-x) - b
+    #return b*np.log10(-x) - m
+    return m*x + b
 
 def make_vrot(radi,Mag,Ropt,alpha):
     # Returns a polyex rotation curve
@@ -59,12 +59,18 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     V0, foo  = curve_fit(func , m, V0_,sigma=dV0)
     rPE, foo = curve_fit(func3, m, rPE_,sigma=drPE)
     A, foo   = curve_fit(func2, m, A_,sigma=dA)
+    perr = np.sqrt(np.diag(foo))
 
     # Make parameters for all Magnitudes
     Mag = np.arange(-25,0.,0.001)
     a=func2(Mag,*A)
     vt_0=func(Mag,*V0)
     rt=Ropt*func3(Mag,*rPE)
+
+    #import matplotlib.pyplot as plt
+    #plt.plot(Mag,func3(Mag,*A))
+    #plt.scatter(m,A_)
+    #plt.show()
 
     # Set slope from NIHAO 17 
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
@@ -79,8 +85,8 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         rt=Ropt*func3(Mag,*rPE)
        
         # Outer edge, and half of it for the slope
-        x2 = RHI * 2.
-        x1 = RHI * 1.
+        x2 = RHI * 1.
+        x1 = RHI * 0.5
         # Calculate rotation velocities at Ropt for all vt_0, rt
         vt = vt_0 * ( 1. - np.exp(-Ropt/rt) ) * ( 1. + a * Ropt/rt )
 
@@ -95,8 +101,8 @@ def Magcalc(vrot,Ropt,RHI,mstar):
        
         # Consider a range of values of alpha
         a = np.arange(-0.04,0.4,0.001)
-        slope1 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
-        slope2 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+        slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
+        slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
         # Only want values where logv is defined (v>0)
         slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
         slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
@@ -105,12 +111,12 @@ def Magcalc(vrot,Ropt,RHI,mstar):
 
         # Calculate delta logv / delta log r
         # Find value of a that gives value closest to NIHAO
-        slope = (slope1_log-slope2_log) / (np.log10(x2)-np.log10(x1))
+        slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
         a = a[np.argmin(abs(slope - slope_sparc))]
 
-    vt_1  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
-    vt_2  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
-    slope = (np.log10(vt_1)-np.log10(vt_2))/(np.log10(x2)-np.log10(x1))
+    vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
+    vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
+    slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
     #print('rt',rt)
 
     return Mag,a,slope,vt_0,rt
@@ -309,7 +315,7 @@ def setup_relations(mass,beams,beam,ring_thickness):
     # Use it to calculate disk thickness based on
     # Puche et al 1992
     # http://adsabs.harvard.edu/abs/1992AJ....103.1841P
-    Vdisp = 2.
+    Vdisp = 12.
     z    = make_z(radi,vrot,Vdisp)
     #####################################################
     # Set the radii, rotation curve, surface brightness prof
