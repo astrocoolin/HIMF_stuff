@@ -9,6 +9,11 @@ from Input_output import  *
 from relations import *
 from NCC import *
 
+m1 = np.array([7.5,8.3,9.2,10.5])
+m2 = np.array([25,50,100,250])
+
+
+
 def automate(same):
     #########################################################
     # Setting constants: KPC, MPC scales, central SB
@@ -66,7 +71,9 @@ def automate(same):
     for i, mass in enumerate(mass_list):
         if same:
             current = Galaxy()
-            current.reroll(mass,beam_list[0],beam_width,delta)
+            #current.reroll(mass,beam_list[0],beam_width,delta)
+            vrot = int(m2[m1 == mass])
+            current.example(vrot)
         for inc in inc_list:
             for beams in beam_list:
                 for snr in sn_list:
@@ -77,16 +84,6 @@ def automate(same):
                         print('mass:',[mass])
                         print('snr:',[snr])
                         ######################################################################
-                        # Names of files
-                        ######################################################################
-                        defname ="cube_input.def"
-                        inset   ='empty.fits'
-                        outset  ='Cube_base.fits'
-                        outname ='Cube_ba_'+str(beams)+".mass_"+str(mass)+".inc_"+\
-                                str(inc)+".SN_"+str(snr)+'.fits'
-                        fname ="ba_"+str(beams)+".mass_"+str(mass)+".inc_"+\
-                                str(inc)+".SN_"+str(snr)
-                        ######################################################################
                         # Use scaling relations to set up the galaxy
                         # Make a file containing the rotation curve and SBP
                         # Make an input file for TiRiFiC, make an empty FITS file
@@ -94,6 +91,16 @@ def automate(same):
                         if not same:
                             current = Galaxy()
                             current.reroll(mass,beams,beam_width,delta)
+                        ######################################################################
+                        # Names of files
+                        ######################################################################
+                        current.defname ="cube_input.def"
+                        current.inset   ='empty.fits'
+                        current.outset  ='Cube_base.fits'
+                        current.outname ='Cube_ba_'+str(beams)+".mass_"+str(round(current.MHI,5))+".inc_"+\
+                                str(inc)+".SN_"+str(snr)+'.fits'
+                        current.fname ="ba_"+str(beams)+".mass_"+str(round(current.MHI,5))+".inc_"+\
+                                str(inc)+".SN_"+str(snr)
                         current.snr=snr
                         current.inc=inc
                         current.calc_dist(beams)
