@@ -40,7 +40,7 @@ def make_vrot(radi,Mag,Ropt,alpha):
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
 
-def Magcalc(vrot,Ropt,RHI,mstar):
+def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     # Find Mag, and slope based on
     # Catinella et al 2007
     # https://arxiv.org/abs/astro-ph/0512051
@@ -62,27 +62,42 @@ def Magcalc(vrot,Ropt,RHI,mstar):
     perr = np.sqrt(np.diag(foo))
 
     # Make parameters for all Magnitudes
-    Mag = np.arange(-25,0.,0.001)
+    Mag = np.arange(-24.,0.,0.001)
+    Mag_ = np.arange(-24.,-19.,0.001)
     a=func2(Mag,*A)
     vt_0=func(Mag,*V0)
     rt=Ropt*func3(Mag,*rPE)
 
-    #import matplotlib.pyplot as plt
-    #plt.plot(Mag,func3(Mag,*A))
-    #plt.scatter(m,A_)
+   # import matplotlib.pyplot as plt
+   # plt.plot(Mag,func2(Mag_,*A))
+   # plt.scatter(m,A_)
+   # plt.savefig('A.png')
+   # plt.close()
+   # #plt.show()
+   # plt.plot(Mag,func3(Mag_,*rPE))
+   # plt.scatter(m,rPE_)
+   # plt.savefig('rPE.png')
+   # plt.close()
+   # #plt.show()
+   # plt.plot(Mag,func(Mag_,*V0))
+   # plt.scatter(m,V0_)
+   # plt.savefig('V0.png')
+   # plt.close()
     #plt.show()
 
     # Set slope from NIHAO 17 
-    slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)
+    slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)*multiplier
     #print(slope_sparc,np.log10(mstar),mstar)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
-    for i in range(0,6):
+    for i in range(0,1):
 
         # Make parameters for all Magnitudes
-        Mag = np.arange(-25,0.,0.001)
+        Mag = np.arange(-24.,0.,0.001)
         vt_0=func(Mag,*V0)
+        print(Ropt)
         rt=Ropt*func3(Mag,*rPE)
+        a=func2(Mag,*A)
        
         # Outer edge, and half of it for the slope
         x2 = RHI * 1.
@@ -98,26 +113,12 @@ def Magcalc(vrot,Ropt,RHI,mstar):
         vt   = vt[ind]
         rt   = rt[ind]
         vt_0 = vt_0[ind]
+        a = a[ind]
        
-        # Consider a range of values of alpha
-        a = np.arange(-0.04,0.4,0.001)
-        slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
-        slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-        # Only want values where logv is defined (v>0)
-        slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
-        slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
-        a = a[(slope1 > 0) & (slope2 > 0)]
-        a_poop = a
-
-        # Calculate delta logv / delta log r
-        # Find value of a that gives value closest to NIHAO
-        slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
-        a = a[np.argmin(abs(slope - slope_sparc))]
 
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
-    #print('rt',rt)
 
     return Mag,a,slope,vt_0,rt
 
@@ -218,7 +219,23 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return float(10.**(const + slope * np.log10(v)))
 
-def setup_relations(mass,beams,beam,ring_thickness):
+def setup_relations(mass,beams,beam,ring_thickness,scatter):
+    if scatter == "False" or not scatter:
+        Mstar_mult = 0.
+        multiplier = 0.
+        m_array1 = np.array([1.,0.])
+        m_array2 = np.array([[1.,0.],[1.,0.]])
+        #print('Not scattering')
+    elif scatter == "Mstar":
+        Mstar_mult = 1.
+        multiplier = 0.
+        m_array1 = np.array([1.,0.])
+        m_array2 = np.array([[1.,1.],[1.,1.]])
+    else:
+        Mstar_mult = 1.
+        multiplier = 1.
+        m_array1 = np.array([1.,1.])
+        m_array2 = np.array([[1.,1.],[1.,1.]])
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -240,9 +257,9 @@ def setup_relations(mass,beams,beam,ring_thickness):
     # Jing Wang, Koribalski, et al 2016
     # HI Mass - Diameter relationship
     # https://arxiv.org/abs/1605.01489
-    slope = np.array([0.506,0.003])
-    const = np.array([-3.293,0.009])
-    scatr = 0.06 #dex
+    slope = np.array([0.506,0.003])*m_array1
+    const = np.array([-3.293,0.009])*m_array1
+    scatr = 0.06*multiplier #dex
     DHI = DHI_calc(MHI,slope, const,scatr)
     # kpc
 
@@ -252,21 +269,21 @@ def setup_relations(mass,beams,beam,ring_thickness):
     # https://arxiv.org/abs/1505.04819
     split           = 9.2832
     Mgas            = MHI * 1.4
-    slope = np.array([[1.052,0.058],[0.461,0.011]])
-    const = np.array([[0.236,0.476],[5.329,0.112]])
-    scatr = np.array([[0.285,0.019],[0.221,0.006]])
+    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2
+    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2
+    scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
-    print(np.log10(Mstar))
+    #print(np.log10(Mstar))
     # Msun
 
     ######################################################
     # Bradford et al 2015, Fig 6
     # Baryonic Tully-Fisher relationship
     # https://arxiv.org/abs/1505.04819
-    slope = np.array([0.277,0.004])
-    const = np.array([-0.672,0.041])
-    scatr = np.array([0.075,0.002])
+    slope = np.array([0.277,0.004])*m_array1
+    const = np.array([-0.672,0.041])*m_array1
+    scatr = np.array([0.075,0.002])*multiplier
     vflat = BTFR(Mbar,slope,const,scatr)
     # km/s
 
@@ -281,9 +298,9 @@ def setup_relations(mass,beams,beam,ring_thickness):
     # Saintonge et al 2007
     # Optical Radius (r83) - Vflat Relationship
     # https://arxiv.org/abs/0710.0760
-    slope = np.array([0.56,0.04])
-    const = np.array([-0.36,0.08])
-    scatr = np.array([0.16])
+    slope = np.array([0.56,0.04])*m_array1
+    const = np.array([-0.36,0.08])*m_array1
+    scatr = np.array([0.16])*multiplier
     Ropt = expdisk(vflat,slope,const,scatr)
     # R_opt I-band
 
@@ -291,7 +308,7 @@ def setup_relations(mass,beams,beam,ring_thickness):
     # Calculating Magnitude from vmax
     # Catinella et al 2005
     # https://arxiv.org/abs/astro-ph/0512051
-    Mag,alpha,slope,v0,rPE = Magcalc(vflat,Ropt,DHI/2.,Mstar)
+    Mag,alpha,slope,v0,rPE = Magcalc(vflat,Ropt,DHI/2.,Mstar,multiplier)
     # I-band mag
     #####################################################
     # Compute radial sampling cadence
