@@ -162,14 +162,14 @@ class Galaxy:
 	)
 
 
-    def reroll(self,Mass,beams):
+    def reroll(self,Mass,beams,scatter):
         
         self.beams = beams
         self.beamsize = 30
         self.rwidth = 2.5
 
         self.MHI,self.DHI,self.Mstar,self.Ropt,self.vflat,self.sigma,self.alpha,self.rt,self.v_0,\
-                self.dx,self.Rs,self.Mag,self.slope=setup_relations(Mass,self.beams,self.beamsize,self.rwidth)
+                self.dx,self.Rs,self.Mag,self.slope=setup_relations(Mass,self.beams,self.beamsize,self.rwidth,scatter)
         
 
         self.Mbar = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
@@ -190,6 +190,8 @@ class Galaxy:
         
         self.DHI_arcsec = self.DHI*206265./self.dist
         self.profiles=self.Profiles(self.polyex,self.sbr,self.radi,self.dist,self.z)
+
+        print(self.Mag)
     class Polyex():
         def __init__(self,alpha,rt,v_0):
             self.alpha = alpha
@@ -237,7 +239,7 @@ class Galaxy:
             self.z = z.disp(radi,self.vrot)
 
     def make_fits(self,realizations):
-        self.make_plots(False)
+        #self.make_plots(False)
         
         #Make_Output
         filecheck = Path(self.defname)
@@ -276,8 +278,6 @@ class Galaxy:
         os.system("rm empty.fits")
         os.system("rm  VROT.png SBR.png SBR_log.png RC.dat "+self.outset+" Logfile.log "+self.defname)
     def make_plots(self,show):
-        if not show:
-            mpl.use('Agg')
         label_size=21.5
         lw=1.5
         mpl.rcParams['xtick.labelsize'] = label_size
@@ -306,9 +306,8 @@ class Galaxy:
         plt.axvline((self.DHI/2.)/ (self.dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax1.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('SBR.png',bbox_inches='tight')
-        #if show:
-        #    plt.show()
+        if show:
+            plt.savefig('SBR.png',bbox_inches='tight')
         plt.close()
 
         fig2, ax2 = plt.subplots(figsize=(20, 10))
@@ -319,9 +318,8 @@ class Galaxy:
         plt.axvline((self.DHI/2.)/ (self.dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax2.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('SBR_log.png',bbox_inches='tight')
-        #if show:
-        #    plt.show()
+        if show:
+            plt.savefig('SBR_log.png',bbox_inches='tight')
         plt.close()
 
         fig3, ax3 = plt.subplots(figsize=(20, 10))
@@ -332,7 +330,7 @@ class Galaxy:
         plt.axvline((self.DHI/2.)/ (self.dist) * 3600. * (180./np.pi))
         minorLocator = mpl.ticker.AutoMinorLocator()
         ax3.xaxis.set_minor_locator(minorLocator)
-        plt.savefig('VROT.png',bbox_inches='tight')
         if show:
-            plt.show()
+            plt.savefig('VROT.png',bbox_inches='tight')
+        plt.show()
         plt.close()

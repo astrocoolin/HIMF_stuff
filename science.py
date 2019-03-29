@@ -127,6 +127,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
     Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
     print(np.log10(Mtest),np.log10(Mtest1))
+    print('Final Cube Mass Frac:',(Mtest1-10.**mass)/(10.**mass)*100.,'%')
     #print(flux)
     
     if (False):

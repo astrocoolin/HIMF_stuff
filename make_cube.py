@@ -71,9 +71,9 @@ def automate(same):
     for i, mass in enumerate(mass_list):
         if same:
             current = Galaxy()
-            #current.reroll(mass,beam_list[0],beam_width,delta)
-            vrot = int(m2[m1 == mass])
-            current.example(vrot)
+            current.reroll(mass,beam_list[0],'True')
+            #vrot = int(m2[m1 == mass])
+            #current.example(vrot)
         for inc in inc_list:
             for beams in beam_list:
                 for snr in sn_list:
@@ -104,6 +104,7 @@ def automate(same):
                         current.snr=snr
                         current.inc=inc
                         current.calc_dist(beams)
+                        current.make_plots(True)
                         current.make_fits(reals)
                         #radi,sbr,vrot,condisp,z,MHI,DHI,Mag,dist,alpha,vflat,\
                         #        Mstar,slope,rd,rPE,cflux,END = \

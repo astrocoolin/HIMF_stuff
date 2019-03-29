@@ -18,7 +18,7 @@ def deffile(outset,inset,defname,radi,vrot,sbr,inc,END,sdis,z,cflux):
     file.write("\nPROMPT=")
     NCORES = os.cpu_count()
     #file.write("\nNCORES="+str(NCORES))
-    file.write("\nNCORES=14")
+    file.write("\nNCORES=8")
     file.write("\n")
     file.write("\nINSET="+inset)
     file.write("\nOUTSET="+outset)
