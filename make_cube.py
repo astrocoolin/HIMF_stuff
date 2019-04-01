@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 import json
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 from science import second_beam
 from Input_output import  *
 from relations import *
