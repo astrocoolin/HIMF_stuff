@@ -198,10 +198,10 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
     mass = np.log10(Mgas)
     if mass < split:
         slope = slope[0,0] + err(slope[0,1])
-        const = const[0,0] + err(const[0,1])-err(scatr[0,0])+err(scatr[0,1])
+        const = const[0,0] - err(const[0,1])-err(scatr[0,0]+err(scatr[0,1]))
     else:
         slope = slope[1,0] + err(slope[1,1])    
-        const = const[1,0] + err(const[1,1])-err(scatr[1,0])+err(scatr[1,1])
+        const = const[1,0] - err(const[1,1])-err(scatr[1,0]+err(scatr[1,1]))
 
     Mstar = mass * 1./slope - const/slope
     print('Mstar',Mstar)
