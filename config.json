@@ -1,16 +1,17 @@
-{	
-	"Ranges":["none"],
-	"Gal_Realizations":[5],
-	"Noise_Realizations":[50],
+{
+        "Ranges":["none"],
+        "Gal_Realizations":[1],
+        "Noise_Realizations":[50],
 
-	"Make_Folder":true,
-	"Make_Output":true,
-	"Make_Cube":true,
+        "Make_Folder":true,
+        "Make_Output":true,
+        "Make_Cube":true,
 
-	"beams": [4],
-	"incs": [60],
-	"masses": [7.5,8.5,9.5],
-	"sn":[8],
+        "beams": [1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,6.0,7.0],
+        "incs": [80],
+        "masses": [7.5],
+        "sn":[8],
 
-	"delta":2.5
+        "delta":2.5
 }
+

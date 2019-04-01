@@ -67,5 +67,6 @@ f3.write("new_log='y'\n")
 f3.write("new_output=y\n")
 f3.write("allnew=-1\n")
 
-f4 = open('background.txt','w')
-f4.write("echo -e \".r /home/colin/Storage/Codes/FAT/FAT.pro\\nFAT, configuration_file='config"+str(num)+".config', Support='/home/colin/Storage/Codes/FAT/Support/'\" | gdl | tee stdout.txt\n")
+f4 = open('m'+str(mass)+'_'+num+'.txt','w')
+f4.write("#!/bin/bash \n")
+f4.write("srun --ntasks=1 echo -e \".r /home/colin/Storage/PhD/Codes/FAT/FAT.pro\\nFAT, configuration_file='config"+str(num)+".config', Support='/home/colin/Storage/PhD/Codes/FAT/Support/'\" | gdl \n")
