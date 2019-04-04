@@ -226,18 +226,21 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
         Mstar_mult = 0.
         multiplier = 0.
         m_array1 = np.array([1.,0.])
-        m_array2 = np.array([[1.,0.],[1.,0.]])
+        m_array2_slope = np.array([[1.,0.],[1.,0.]])
+        m_array2_const = np.array([[1.,0.],[1.,0.]])
         #print('Not scattering')
     elif scatter == "Mstar":
         Mstar_mult = 1.
         multiplier = 0.
         m_array1 = np.array([1.,0.])
-        m_array2 = np.array([[1.,0.],[1.,0.]])
+        m_array2_slope = np.array([[1.,0.],[1.,0.]])
+        m_array2_const = np.array([[1.,1.],[1.,1.]])
     else:
         Mstar_mult = 1.
         multiplier = 1.
         m_array1 = np.array([1.,1.])
-        m_array2 = np.array([[1.,1.],[1.,1.]])
+        m_array2_slope = np.array([[1.,1.],[1.,1.]])
+        m_array2_const = np.array([[1.,1.],[1.,1.]])
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -271,8 +274,8 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     # https://arxiv.org/abs/1505.04819
     split           = 9.2832
     Mgas            = MHI * 1.4
-    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2
-    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2
+    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2_slope
+    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2_const
     scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
