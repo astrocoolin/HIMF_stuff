@@ -40,10 +40,14 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     noise = mean_signal/sn
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
+    rms = 0.75 # in mJy
+    noisescl = rms *0.001 / pixarea * bmaj_sigma*2.*np.sqrt(np.pi)
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
+
+    print('RMS',np.sqrt(np.mean((cube[0,:,:])**2.))/0.001,'mJy')
 
     prihdr = hdulist[0].header
     prihdr['OBJECT'] = 'SimGal'
@@ -70,8 +74,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     totalsignal = np.sum(cube[mask > 0.5])/pixperbeam
 
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
-    Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
-    print(np.log10(Mtest),np.log10(Mtest1))
+    #Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
+    print(np.log10(Mtest1))
     print('Final Cube Mass Frac:',(Mtest1-10.**mass)/(10.**mass)*100.,'%')
     #print(flux)
     
