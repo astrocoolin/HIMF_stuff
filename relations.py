@@ -242,10 +242,10 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
         m_array2_slope = np.array([[1.,1.],[1.,1.]])
         m_array2_const = np.array([[1.,1.],[1.,1.]])
     ######################################################
-    MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
-    mass=10.**float(mass)
-    i = np.array(np.argmin(abs(float(mass)-MHI)))
-    MHI = MHI[i]
+    #MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
+    mass=10.**mass
+    #i = np.array(np.argmin(abs(float(mass)-MHI)))
+    #MHI = MHI[i]
     # Msun
 
     ######################################################
