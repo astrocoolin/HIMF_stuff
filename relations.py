@@ -179,7 +179,7 @@ def err(errbar):
     while temp_err > 2.5 * errbar:
         temp_err =np.random.normal(loc=0.,scale=errbar)
     #return(temp_err)
-    return(errbar)
+    return(-errbar)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -197,10 +197,10 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
     #Stellar Mass calculator
     mass = np.log10(Mgas)
     if mass < split:
-        slope = slope[0,0] + err(slope[0,1])
+        slope = slope[0,0] #+ err(slope[0,1])
         const = const[0,0] - err(const[0,1])-err(scatr[0,0]+err(scatr[0,1]))
     else:
-        slope = slope[1,0] + err(slope[1,1])    
+        slope = slope[1,0] #+ err(slope[1,1])    
         const = const[1,0] - err(const[1,1])-err(scatr[1,0]+err(scatr[1,1]))
 
     Mstar = mass * 1./slope - const/slope
