@@ -9,61 +9,6 @@ from decimal import Decimal
 import random 
 import os
 
-def first_beam(outset,outname,rmax,ba,sn,inc,mass):
-    hdulist = fits.open(outset)
-    cube = hdulist[0].data
-    cube_in = hdulist[0].data
-    delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
-    delt = delt_d * 3600 # arcseconds / pixel
-    print('------------------')
-    fwhm = 2.*np.sqrt(2.*np.log(2.))        #FWHM  = 2.355* sigma
-    bmaj_fwhm = 7.5 #pixels; #30 arcsecond beam
-    bmaj_sigma  = bmaj_fwhm / fwhm
-    print('Diameter: ',round(rmax,2),' arcseconds,',round(rmax/delt,2),' pixels')
-    print('BMAJ: (FWHM) ',round(bmaj_fwhm*delt,2),' arcseconds,',round(bmaj_fwhm,2),' pixels')
-    gauss = Gaussian2DKernel(bmaj_sigma)
-    print('Calculating Noise level')
-    sn_np=np.array([])
-    nfrac = 0.1
-    cubemax = np.max(cube)
-    for vel in range(0,cube.shape[0]):
-        softbeam = cube[vel,:,:] 
-        if np.size(softbeam[ softbeam[:,:] > nfrac*cubemax]) > 0:
-            sum_41 = np.mean(softbeam[softbeam[:,:] > nfrac*cubemax])
-            sn_np = np.append(sn_np,sum_41)
-
-    signal = np.mean(sn_np[:])
-    noise = signal / sn
-    noise = noise * 2.*np.sqrt(np.pi)* bmaj_sigma
-
-    print('Noise:',noise)
-    print('Signal:',signal)
-    
-    print('PSF convolution')
-    for vel in range(0,cube.shape[0]):
-        if  np.size(cube[vel,(cube[vel,:,:]) > nfrac*cube[:,:,:].max()]) > 0:
-            cube[vel,:,:]=b_math(cube[vel,:,:],noise,gauss)
-        else:
-            cube[vel,:,:]=b_math(np.zeros_like(cube[vel,:,:]),noise,gauss)
- 
-    
-    prihdr = hdulist[0].header
-    prihdr['OBJECT'] = 'SimGal'
-    prihdr['OBSERVER']= 'Colin'
-    prihdr['CUNIT1']= 'DEGREE'
-    prihdr['CUNIT2']= 'DEGREE'
-    prihdr['CUNIT3']= 'M/S'
-    prihdr['BMAJ']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
-    prihdr['BMIN']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
-    prihdr['COMMENT'] = 'SN:'+str(sn)
-    prihdr['COMMENT'] = 'Beams Across: '+str(ba)
-    prihdr['COMMENT'] = 'Inclination:  '+str(inc)
-    prihdr['COMMENT'] = 'Mass: '+str(mass)
-
-    hdu = fits.PrimaryHDU(cube_in,header=prihdr)
-    hlist = fits.HDUList([hdu])
-    hlist.writeto(outname,overwrite=True)
-
 def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DHI):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
@@ -95,10 +40,14 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     noise = mean_signal/sn
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
+    rms = 0.75 # in mJy
+    noisescl = rms *0.001 / pixarea * bmaj_sigma*2.*np.sqrt(np.pi)
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
     cube = ndimage.gaussian_filter(cuberms+cube,sigma=(0,bmaj_sigma,bmaj_sigma),order = 0)
     cube = cube*pixarea
+
+    print('RMS',np.sqrt(np.mean((cube[0,:,:])**2.))/0.001,'mJy')
 
     prihdr = hdulist[0].header
     prihdr['OBJECT'] = 'SimGal'
@@ -125,8 +74,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     totalsignal = np.sum(cube[mask > 0.5])/pixperbeam
 
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
-    Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
-    print(np.log10(Mtest),np.log10(Mtest1))
+    #Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
+    print(np.log10(Mtest1))
     print('Final Cube Mass Frac:',(Mtest1-10.**mass)/(10.**mass)*100.,'%')
     #print(flux)
     

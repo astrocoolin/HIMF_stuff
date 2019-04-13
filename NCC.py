@@ -269,7 +269,7 @@ class Galaxy:
                 os.system("rm -r "+self.fname+'.noise'+str(num))
                 print("Refreshed folder")
             os.system("mkdir "+self.fname+'.noise'+str(num))
-            os.system("cp "+self.defname+' '+self.outset+" VROT.png SBR.png SBR_log.png RC.dat "+self.fname+'.noise'+str(num))
+            os.system("cp "+self.defname+" VROT.png SBR.png SBR_log.png RC.dat "+self.fname+'.noise'+str(num))
             ######################################################################
             print("realization #",num)
             second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.snr,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)

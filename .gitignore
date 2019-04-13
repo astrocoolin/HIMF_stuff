@@ -1,0 +1,8 @@
+# ignore all fits
+*.fits
+*.png
+ba_*noise*
+RC.dat
+__pycache__
+cube_input.def
+config.json

@@ -179,7 +179,7 @@ def err(errbar):
     while temp_err > 2.5 * errbar:
         temp_err =np.random.normal(loc=0.,scale=errbar)
     #return(temp_err)
-    return(errbar)
+    return(-errbar)
 
 def phi(MHI, Mstar, alpha, phi_0):
     #Mass Function
@@ -197,10 +197,10 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
     #Stellar Mass calculator
     mass = np.log10(Mgas)
     if mass < split:
-        slope = slope[0,0] + err(slope[0,1])
+        slope = slope[0,0] #+ err(slope[0,1])
         const = const[0,0] - err(const[0,1])-err(scatr[0,0]+err(scatr[0,1]))
     else:
-        slope = slope[1,0] + err(slope[1,1])    
+        slope = slope[1,0] #+ err(slope[1,1])    
         const = const[1,0] - err(const[1,1])-err(scatr[1,0]+err(scatr[1,1]))
 
     Mstar = mass * 1./slope - const/slope
@@ -226,18 +226,21 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
         Mstar_mult = 0.
         multiplier = 0.
         m_array1 = np.array([1.,0.])
-        m_array2 = np.array([[1.,0.],[1.,0.]])
+        m_array2_slope = np.array([[1.,0.],[1.,0.]])
+        m_array2_const = np.array([[1.,0.],[1.,0.]])
         #print('Not scattering')
     elif scatter == "Mstar":
         Mstar_mult = 1.
         multiplier = 0.
         m_array1 = np.array([1.,0.])
-        m_array2 = np.array([[1.,0.],[1.,0.]])
+        m_array2_slope = np.array([[1.,0.],[1.,0.]])
+        m_array2_const = np.array([[1.,1.],[1.,1.]])
     else:
         Mstar_mult = 1.
         multiplier = 1.
         m_array1 = np.array([1.,1.])
-        m_array2 = np.array([[1.,1.],[1.,1.]])
+        m_array2_slope = np.array([[1.,1.],[1.,1.]])
+        m_array2_const = np.array([[1.,1.],[1.,1.]])
     ######################################################
     MHI = np.round(10.**(np.arange(6.,11.1,.1)),1)
     mass=10.**float(mass)
@@ -271,8 +274,8 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     # https://arxiv.org/abs/1505.04819
     split           = 9.2832
     Mgas            = MHI * 1.4
-    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2
-    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2
+    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2_slope
+    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2_const
     scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
