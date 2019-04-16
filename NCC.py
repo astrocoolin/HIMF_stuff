@@ -190,8 +190,6 @@ class Galaxy:
         
         self.DHI_arcsec = self.DHI*206265./self.dist
         self.profiles=self.Profiles(self.polyex,self.sbr,self.radi,self.dist,self.z)
-
-        print(self.Mag)
     class Polyex():
         def __init__(self,alpha,rt,v_0):
             self.alpha = alpha
@@ -249,7 +247,7 @@ class Galaxy:
         rotfile(self.profiles.radi,self.profiles.vrot,self.profiles.sbr,self.profiles.z,len(self.profiles.radi))
         
         deffile(self.outset,self.inset,self.defname,self.profiles.radi,self.profiles.vrot,self.profiles.sbr,self.inc,\
-            len(self.radi),8.0,self.profiles.z,5.0E-9)
+            len(self.radi),8.0,self.profiles.z,5.0E-8)
         
         filecheck = Path(self.outname)
         if filecheck.is_file(): os.system("rm "+self.outname)

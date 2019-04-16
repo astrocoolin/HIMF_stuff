@@ -14,7 +14,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     cube = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
     print(np.log10(scoop),mass)
-    print('Percentage of Expected Mass:',(scoop-10.**mass)/(10.**mass)*100.,'%')
+    print('Percentage Diff of Expected Mass:',(scoop-10.**mass)/(10.**mass)*100.,'%')
 
     delt_d = abs(hdulist[0].header['CDELT1']) # degrees / pixel
     delt = delt_d * 3600 # arcseconds / pixel
@@ -77,7 +77,7 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     Mtest1 = 0.236*dist**2*totalsignal*prihdr['CDELT3']/1000.
     #Mtest=(0.236)*(dist)**2.*np.sum(cube)*prihdr['CDELT3']/1000./((np.pi*beam**2.)/(4.*np.log(2.)))
     print(np.log10(Mtest1))
-    print('Final Cube Mass Frac:',(Mtest1-10.**mass)/(10.**mass)*100.,'%')
+    print('Final Cube Mass Offset:',(Mtest1-10.**mass)/(10.**mass)*100.,'%')
     #print(flux)
     
     if (False):

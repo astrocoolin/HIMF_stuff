@@ -87,7 +87,6 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
 
     # Set slope from NIHAO 17 
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)*multiplier
-    #print(slope_sparc,np.log10(mstar),mstar)
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
     for i in range(0,1):
@@ -95,7 +94,6 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         # Make parameters for all Magnitudes
         Mag = np.arange(-24.,0.,0.001)
         vt_0=func(Mag,*V0)
-        print(Ropt)
         rt=Ropt*func3(Mag,*rPE)
         a=func2(Mag,*A)
        
@@ -146,18 +144,18 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     x=0.36
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.15,0.151,0.005)
+    delta = np.arange(-0.15,0.151,0.001)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
         Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)
-    Mj = np.argmin(abs(Mass_guess- mass))
+    Mj = np.argmin(abs(np.log10(Mass_guess)-mass))
+    print('Mass',np.log10(Mass_guess[Mj]),mass)
     dx = delta[Mj]
 
     # When closest one is found, calculate it and return it
     sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
     Mass_guess = (integrate.simps(sbr*2.*np.pi*radi,radi)*1000.**2.)
-    #print(np.log10(Mass_guess),'Mass_guess')
     if round(dx,3) <= -0.15 or round(dx,3) >= 0.151:
         while True:
             print("FAILURE",dx,0.36+dx)
@@ -190,7 +188,6 @@ def DHI_calc(MHI, slope,const,scatr):
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1]) + err(scatr)
     DHI = 10.**(slope*np.log10(MHI)+const)
-    print('DHI',DHI)
     return DHI
 
 def Mstar_calc(Mgas,slope,const,split,scatr):
@@ -204,7 +201,6 @@ def Mstar_calc(Mgas,slope,const,split,scatr):
         const = const[1,0] - err(const[1,1])-err(scatr[1,0]+err(scatr[1,1]))
 
     Mstar = mass * 1./slope - const/slope
-    print('Mstar',Mstar)
     return 10.** Mstar       
 
 def BTFR(Mbar,slope,const,scatr):
@@ -212,7 +208,6 @@ def BTFR(Mbar,slope,const,scatr):
     slope = slope[0] + err(slope[1])
     const = const[0] + err(const[1])+err(scatr[0]+err(scatr[1]))
     logv = np.log10(Mbar) * slope + const
-    print("VELOCITY BRADFORD",10.**logv)
     return 10.**(logv)
 
 def expdisk(v,slope,const,scatr):
@@ -228,7 +223,6 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
         m_array1 = np.array([1.,0.])
         m_array2_slope = np.array([[1.,0.],[1.,0.]])
         m_array2_const = np.array([[1.,0.],[1.,0.]])
-        #print('Not scattering')
     elif scatter == "Mstar":
         Mstar_mult = 1.
         multiplier = 0.
@@ -279,7 +273,6 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
-    #print(np.log10(Mstar))
     # Msun
 
     ######################################################
@@ -353,5 +346,4 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     sbr2 = sbr/1.24756e+20*(conv)
     
     #return Vdisp, MHI, DHI, Mag, dist, alpha,vflat,Mstar,slope,Ropt,rPE,cflux,END,v0,dx,Rs
-    #print('SLOPE,MSTAR,MHI',slope,Mstar,MHI)
     return np.log10(MHI),DHI,np.log10(Mstar),Ropt,vflat,Vdisp,alpha,rPE_kpc,v0,dx,Rs,Mag,slope
