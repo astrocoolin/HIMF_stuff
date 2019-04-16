@@ -40,7 +40,8 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     noise = mean_signal/sn
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
-    rms = 0.75 # in mJy
+    #rms = 0.75 # in mJy
+    rms = 1.6 # in mJy
     noisescl = rms *0.001 / pixarea * bmaj_sigma*2.*np.sqrt(np.pi)
 
     cuberms = np.random.normal(scale=noisescl,size=np.shape(cube))
