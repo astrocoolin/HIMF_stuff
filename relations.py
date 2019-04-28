@@ -95,7 +95,7 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         Mag = np.arange(-24.,0.,0.001)
         vt_0=func(Mag,*V0)
         rt=Ropt*func3(Mag,*rPE)
-        a=func2(Mag,*A)
+        #a=func2(Mag,*A)
        
         # Outer edge, and half of it for the slope
         x2 = RHI * 1.
@@ -111,7 +111,7 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         vt   = vt[ind]
         rt   = rt[ind]
         vt_0 = vt_0[ind]
-        a = a[ind]
+        #a = a[ind]
        
         # Consider a range of values of alpha
         a = np.arange(-0.04,0.4,0.001)
@@ -126,10 +126,15 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         # Find value of a that gives value closest to NIHAO
         slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
         a = a[np.argmin(abs(slope - slope_sparc))]
+        if a < 0:
+            a = 0
+
 
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
+    #print(slope, slope_sparc)
+    #print(vrot,vt)
 
 
     return Mag,a,slope,vt_0,rt
