@@ -89,7 +89,7 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)*multiplier
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
-    for i in range(0,1):
+    for i in range(0,2):
 
         # Make parameters for all Magnitudes
         Mag = np.arange(-24.,0.,0.001)
@@ -113,10 +113,24 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         vt_0 = vt_0[ind]
         a = a[ind]
        
+        # Consider a range of values of alpha
+        a = np.arange(-0.04,0.4,0.001)
+        slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
+        slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+        # Only want values where logv is defined (v>0)
+        slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
+        slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
+        a = a[(slope1 > 0) & (slope2 > 0)]
+
+        # Calculate delta logv / delta log r
+        # Find value of a that gives value closest to NIHAO
+        slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
+        a = a[np.argmin(abs(slope - slope_sparc))]
 
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
+
 
     return Mag,a,slope,vt_0,rt
 
