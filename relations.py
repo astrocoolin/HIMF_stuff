@@ -140,7 +140,6 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
-    #print(a,slope,slope_sparc)
     return Mag,a,slope,vt_0,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
