@@ -36,6 +36,7 @@ def make_vrot(radi,Mag,Ropt,alpha):
     rPE,foo = curve_fit(func3, m, rPE,sigma=drPE)
     vt=func(Mag,*V0)
     rt=Ropt*func3(Mag,*rPE) 
+
     a = alpha
 
     return vt*(1.-np.exp(-radi/rt))*(1.+a*radi/rt)
@@ -59,6 +60,9 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     V0, foo  = curve_fit(func , m, V0_,sigma=dV0)
     rPE, foo = curve_fit(func3, m, rPE_,sigma=drPE)
     A, foo   = curve_fit(func2, m, A_,sigma=dA)
+
+    #print(V0,rPE,A)
+
     perr = np.sqrt(np.diag(foo))
 
     # Make parameters for all Magnitudes
@@ -67,6 +71,8 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     a=func2(Mag,*A)
     vt_0=func(Mag,*V0)
     rt=Ropt*func3(Mag,*rPE)
+    #for i in range(0,len(Mag)):
+    #    print(Mag[i],vt_0[i],rt[i])
 
    # import matplotlib.pyplot as plt
    # plt.plot(Mag,func2(Mag_,*A))
@@ -89,13 +95,15 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
     slope_sparc = 0.123 - 0.137*(np.log10(mstar)-9.471) + err(0.19)*multiplier
 
     # Find Vrot, then Alpha, then check again to make sure Vrot is consistent
+    Mag = np.arange(-24.,0.,0.001)
+    a=func2(Mag,*A)
     for i in range(0,2):
 
         # Make parameters for all Magnitudes
         Mag = np.arange(-24.,0.,0.001)
         vt_0=func(Mag,*V0)
         rt=Ropt*func3(Mag,*rPE)
-        a=func2(Mag,*A)
+        #a=func2(Mag,*A)
        
         # Outer edge, and half of it for the slope
         x2 = RHI * 1.
@@ -111,27 +119,28 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
         vt   = vt[ind]
         rt   = rt[ind]
         vt_0 = vt_0[ind]
-        a = a[ind]
-       
-        # Consider a range of values of alpha
-        a = np.arange(-0.04,0.4,0.001)
-        slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
-        slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
-        # Only want values where logv is defined (v>0)
-        slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
-        slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
-        a = a[(slope1 > 0) & (slope2 > 0)]
+        #a = a[ind]
+      
+        if True:
+            # Consider a range of values of alpha
+            a = np.arange(0.00,0.4,0.001)
+            slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
+            slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
+            # Only want values where logv is defined (v>0)
+            slope1_log = np.log10(slope1[(slope1 > 0) & (slope2 > 0)])
+            slope2_log = np.log10(slope2[(slope1 > 0) & (slope2 > 0)])
+            a = a[(slope1 > 0) & (slope2 > 0)]
 
-        # Calculate delta logv / delta log r
-        # Find value of a that gives value closest to NIHAO
-        slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
-        a = a[np.argmin(abs(slope - slope_sparc))]
+            # Calculate delta logv / delta log r
+            # Find value of a that gives value closest to NIHAO
+            slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
+            a = a[np.argmin(abs(slope - slope_sparc))]
+            if a < 0 : a = 0
 
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
-
-
+    #print(a,slope,slope_sparc)
     return Mag,a,slope,vt_0,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
@@ -164,7 +173,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
         Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)
     Mj = np.argmin(abs(np.log10(Mass_guess)-mass))
-    print('Mass',np.log10(Mass_guess[Mj]),mass)
+    #print('Mass',np.log10(Mass_guess[Mj]),mass)
     dx = delta[Mj]
 
     # When closest one is found, calculate it and return it

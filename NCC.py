@@ -176,7 +176,7 @@ class Galaxy:
         self.END = self.DHI
         
         self.calc_dist(self.beams)
-        
+        print(self.MHI, self.DHI, self.Mstar,self.Ropt,self.vflat,self.alpha,self.dx,self.Mag,self.slope,self.dist,self.beams) 
 
     def calc_dist(self,beams):
         self.beams=beams
