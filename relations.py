@@ -123,7 +123,7 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
       
         if True:
             # Consider a range of values of alpha
-            a = np.arange(0.00,0.4,0.001)
+            a = np.arange(0.00,0.4,0.0001)
             slope2 = ((1.-np.exp(-x2/rt))*(1.+a*x2/rt))
             slope1 = ((1.-np.exp(-x1/rt))*(1.+a*x1/rt))
             # Only want values where logv is defined (v>0)
@@ -134,12 +134,14 @@ def Magcalc(vrot,Ropt,RHI,mstar,multiplier):
             # Calculate delta logv / delta log r
             # Find value of a that gives value closest to NIHAO
             slope = (slope2_log-slope1_log) / (np.log10(x2)-np.log10(x1))
+            jay = np.argmin(abs(slope - slope_sparc))
             a = a[np.argmin(abs(slope - slope_sparc))]
             if a < 0 : a = 0
 
     vt_2  = vt_0*(1.-np.exp(-x2/rt))*(1.+a*x2/rt)
     vt_1  = vt_0*(1.-np.exp(-x1/rt))*(1.+a*x1/rt)
     slope = (np.log10(vt_2)-np.log10(vt_1))/(np.log10(x2)-np.log10(x1))
+    #print(RHI, jay, slope,slope_sparc,a,Ropt)
     return Mag,a,slope,vt_0,rt
 
 def sbr_calc(radi,RHI,x,dx,vt,Rs):
@@ -238,7 +240,7 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return float(10.**(const + slope * np.log10(v)))
 
-def Ropt_calc(DHI,slope)#,const,scatr):
+def Ropt_calc(DHI,slope):#,const,scatr):
     #const = const[0] + err(const[1]) + err(scatr)
     slope = slope[0] + err(slope[1])
     return DHI/1.7
@@ -327,7 +329,7 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     #const = np.array([-0.36,0.08])*m_array1
     #scatr = np.array([0.16])*multiplier
     slope = np.array([1.7,1.5])*m_array1
-    Ropt = Ropt_calc(DHI,slope)#vflat,slope,const,scatr)
+    Ropt = Ropt_calc(DHI/2.,slope)#vflat,slope,const,scatr)
     #h = 0.70
     #Ropt = Ropt*h
     # R_opt I-band
