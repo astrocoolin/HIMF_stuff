@@ -238,6 +238,11 @@ def expdisk(v,slope,const,scatr):
     const = const[0] + err(const[1]) + err(scatr)
     return float(10.**(const + slope * np.log10(v)))
 
+def Ropt_calc(DHI,slope)#,const,scatr):
+    #const = const[0] + err(const[1]) + err(scatr)
+    slope = slope[0] + err(slope[1])
+    return DHI/1.7
+
 def setup_relations(mass,beams,beam,ring_thickness,scatter):
     if scatter == "False" or not scatter:
         Mstar_mult = 0.
@@ -318,12 +323,13 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     # Saintonge et al 2007
     # Optical Radius (r83) - Vflat Relationship
     # https://arxiv.org/abs/0710.0760
-    slope = np.array([0.56,0.04])*m_array1
-    const = np.array([-0.36,0.08])*m_array1
-    scatr = np.array([0.16])*multiplier
-    Ropt = expdisk(vflat,slope,const,scatr)
-    h = 0.70
-    Ropt = Ropt*h
+    #slope = np.array([0.56,0.04])*m_array1
+    #const = np.array([-0.36,0.08])*m_array1
+    #scatr = np.array([0.16])*multiplier
+    slope = np.array([1.7,1.5])*m_array1
+    Ropt = Ropt_calc(DHI,slope)#vflat,slope,const,scatr)
+    #h = 0.70
+    #Ropt = Ropt*h
     # R_opt I-band
 
     #####################################################
