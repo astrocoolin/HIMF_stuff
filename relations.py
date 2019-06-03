@@ -158,21 +158,37 @@ def sbr_calc(radi,RHI,x,dx,vt,Rs):
     # Find the closest point to the 1 Msun/pc radius
     R_HI= np.argmin(abs(radi - RHI))
 
+    def sbr_return(R):
+        sig1_ = np.exp(-((R-0.4*RHI)/(np.sqrt(2)*(x+dx)*RHI))**2.)
+        sig2_ = (np.sqrt(vt/120.)-1.)*np.exp(-R/Rs)
+        sbr_ = sig1_-sig2_
+        if sbr_ < 0: sbr_ = 0
+        return sbr_
+
+            
     # Return normalized surface brightness profile
-    sbr = sbr/sbr[R_HI]
+    #sbr = sbr/sbr[R_HI]
+    #sbr = sbr/sbr_return(RHI)
     return sbr
 
 def make_sbr(radi,Rs,DHI,vt,mass):
     # Make the surface brightness profile
     RHI=DHI/2.
     x=0.36
+    def sbr_return(R,RHI,x,dx,vt,Rs):
+        sig1_ = np.exp(-((R-0.4*RHI)/(np.sqrt(2)*(x+dx)*RHI))**2.)
+        sig2_ = (np.sqrt(vt/120.)-1.)*np.exp(-R/Rs)
+        sbr_ = sig1_-sig2_
+        if sbr_ < 0: sbr_ = 0
+        return sbr_
 
     # consider a range of x+dx to get closest match to HI mass
-    delta = np.arange(-0.15,0.151,0.001)
+    delta = np.arange(-0.1,0.1,0.0005)
     Mass_guess = np.zeros_like(delta)
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
-        Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)
+        Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)/sbr_return(RHI,RHI,x,dx,vt,Rs)
+        print(i,round(delta[i],4),round(np.log10(Mass_guess[i]),4),(mass),round(RHI,4),round(dx,4),round(vt,4),round(Rs,4))
     Mj = np.argmin(abs(np.log10(Mass_guess)-mass))
     #print('Mass',np.log10(Mass_guess[Mj]),mass)
     dx = delta[Mj]
@@ -184,7 +200,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
         while True:
             print("FAILURE",dx,0.36+dx)
             stop
-
+    print(Rs,DHI,vt,mass,Mj)
     return sbr,dx
 
 def make_z(radi,vrot,sigma):
@@ -234,6 +250,13 @@ def BTFR(Mbar,slope,const,scatr):
     logv = np.log10(Mbar) * slope + const
     return 10.**(logv)
 
+def Match_velocity(MHI):
+    x = np.log10(MHI)
+    z = np.array([-1.04664019e-03,  5.75036948e-02, -1.31396950e+00,  1.60140171e+01,-1.10005094e+02,  4.04961852e+02, -6.24802612e+02])
+    y = np.poly1d(z)
+    logv = y(x)
+    return 10.**logv
+
 def expdisk(v,slope,const,scatr):
     #scale length for the polyex fit
     slope = slope[0] + err(slope[1])
@@ -243,7 +266,7 @@ def expdisk(v,slope,const,scatr):
 def Ropt_calc(DHI,slope):#,const,scatr):
     #const = const[0] + err(const[1]) + err(scatr)
     slope = slope[0] + err(slope[1])
-    return DHI/1.7
+    return DHI/slope
 
 def setup_relations(mass,beams,beam,ring_thickness,scatter):
     if scatter == "False" or not scatter:
@@ -295,25 +318,41 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     # Bradford et al 2015, Fig 5
     # HI Mass - Stellar Mass Relationship
     # https://arxiv.org/abs/1505.04819
-    split           = 9.2832
-    Mgas            = MHI * 1.4
-    slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2_slope
-    const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2_const
-    scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
+    ######################################################
+    #split           = 9.2832
+    #Mgas            = MHI * 1.4
+    #slope = np.array([[1.052,0.058],[0.461,0.011]])*m_array2_slope
+    #const = np.array([[0.236,0.476],[5.329,0.112]])*m_array2_const
+    #scatr = np.array([[0.285,0.019],[0.221,0.006]])*Mstar_mult
+    ######################################################
+    # Using Alfalfa numbers instead
+    ######################################################
+    split = 9.526
+    Mgas  = MHI
+    slope = np.array([[0.712,0],[0.276,0]])*m_array2_slope
+    const = np.array([[3.117,0.],[7.042,0]])*m_array2_const
+    scatr = np.array([[0,0],[0,0]])*Mstar_mult
     Mstar = Mstar_calc(Mgas,slope,const,split,scatr) 
     Mbar = Mstar + Mgas
     # Msun
 
     ######################################################
-    # Bradford et al 2015, Fig 6
-    # Baryonic Tully-Fisher relationship
-    # https://arxiv.org/abs/1505.04819
-    slope = np.array([0.277,0.004])*m_array1
-    const = np.array([-0.672,0.041])*m_array1
-    scatr = np.array([0.075,0.002])*multiplier
-    vflat = BTFR(Mbar,slope,const,scatr)
-    # km/s
-
+    ## Instead of this, use abundance matching relationship
+    ######################################################
+    ## Bradford et al 2015, Fig 6
+    ## Baryonic Tully-Fisher relationship
+    ## https://arxiv.org/abs/1505.04819
+    #slope = np.array([0.277,0.004])*m_array1
+    #const = np.array([-0.672,0.041])*m_array1
+    #scatr = np.array([0.075,0.002])*multiplier
+    #vflat = BTFR(Mbar,slope,const,scatr)
+    ## km/s
+    ######################################################
+    # Abundance matching relatiosnhip here
+    ######################################################
+    vflat = Match_velocity(MHI)
+    ######################################################
+    #
     ######################################################
     # Jing et al 2014
     # HI scale length = 0.18 RHI
@@ -328,6 +367,12 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     #slope = np.array([0.56,0.04])*m_array1
     #const = np.array([-0.36,0.08])*m_array1
     #scatr = np.array([0.16])*multiplier
+    ######################################################
+    # Alternate measurement of Ropt, proportional to RHI
+    ######################################################
+    # Broeils & Rhee 1997
+    # Optical Radius (R25) - DHI relationship
+    # https://ui.adsabs.harvard.edu/abs/1997A%26A...324..877B/abstract
     slope = np.array([1.7,1.5])*m_array1
     Ropt = Ropt_calc(DHI/2.,slope)#vflat,slope,const,scatr)
     #h = 0.70
