@@ -188,7 +188,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
     for i, dx in enumerate(delta):
         sbr = sbr_calc(radi,RHI,x,dx,vt,Rs)
         Mass_guess[i] = (integrate.trapz(sbr*2*np.pi*radi,radi)*1000.**2.)/sbr_return(RHI,RHI,x,dx,vt,Rs)
-        print(i,round(delta[i],4),round(np.log10(Mass_guess[i]),4),(mass),round(RHI,4),round(dx,4),round(vt,4),round(Rs,4))
+        #print(i,round(delta[i],4),round(np.log10(Mass_guess[i]),4),(mass),round(RHI,4),round(dx,4),round(vt,4),round(Rs,4))
     Mj = np.argmin(abs(np.log10(Mass_guess)-mass))
     #print('Mass',np.log10(Mass_guess[Mj]),mass)
     dx = delta[Mj]
@@ -200,7 +200,7 @@ def make_sbr(radi,Rs,DHI,vt,mass):
         while True:
             print("FAILURE",dx,0.36+dx)
             stop
-    print(Rs,DHI,vt,mass,Mj)
+    #print(Rs,DHI,vt,mass,Mj)
     return sbr,dx
 
 def make_z(radi,vrot,sigma):
