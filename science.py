@@ -58,7 +58,6 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     prihdr['CUNIT3']= 'm/s'
     prihdr['BMAJ']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
     prihdr['BMIN']  =    (bmaj_fwhm)*delt_d # pixels * degrees/pixel
-    prihdr['COMMENT'] = 'SN:'+str(sn)
     prihdr['COMMENT'] = 'Beams Across: '+str(ba)
     prihdr['COMMENT'] = 'Inclination:  '+str(inc)
     prihdr['COMMENT'] = 'Mass: '+str(mass)
