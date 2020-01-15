@@ -415,7 +415,7 @@ def setup_relations(mass,beams,beam,ring_thickness,scatter):
     rPE_kpc = rPE
     rPE  = rPE      / (dist) * 3600. * (180./np.pi)
     #cflux = np.sum(sbr / 1.0E5)
-    cflux = 1.0E-6
+    cflux = 1.0E-5
     ###############################################
     sbr2 = sbr/1.24756e+20*(conv)
     

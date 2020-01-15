@@ -37,9 +37,8 @@ def second_beam(outset,outname,rmax,ba,inc,mass,dist,cflux_min,beam_arcsec,DHI):
     smooth[smooth > cutoff]=1.
     mask = smooth 
 
-    pixarea=np.pi * bmaj_sigma **2.* 2.
-    noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
     #rms = 0.75 # in mJy
+    pixarea=np.pi * bmaj_sigma **2.* 2.
     rms = 1.6 # in mJy
     noisescl = rms *0.001 / pixarea * bmaj_sigma*2.*np.sqrt(np.pi)
 

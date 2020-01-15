@@ -1,11 +1,11 @@
 # HI Mass of galaxy
 Mass = 7.5
 # Number of beams across DHI; 30 arcsecond beam
-Beams = 4.0
+Beams = 20
 # Inclination in degrees
-Inclination = 80
+Inclination = 45
 # Save png plots?
 Save_plots = True
 # Make FITS files?
 # Will only work if TiRiFiC is installed
-FITS = False
+FITS = True

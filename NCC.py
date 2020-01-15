@@ -207,10 +207,10 @@ class Galaxy:
         os.system("cp "+self.defname+" RC.dat "+self.fname)
         ######################################################################
         second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)
-        os.system("mv "+self.outname+" "+self.fname)
+        os.system("mv "+self.outname+" "+self.outset+" "+self.fname)
         os.system("rm "+self.outname)
         os.system("rm empty.fits")
-        os.system("rm  VROT.png SBR.png SBR_log.png RC.dat "+self.outset+" Logfile.log "+self.defname)
+        #os.system("rm  VROT.png SBR.png SBR_log.png RC.dat "+self.outset+" Logfile.log "+self.defname)
     def make_plots(self,show):
         label_size=21.5
         lw=1.5
