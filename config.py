@@ -3,6 +3,9 @@ Mass = 7.5
 # Number of beams across DHI; 30 arcsecond beam
 Beams = 4.0
 # Inclination in degrees
-Inclination = 60
+Inclination = 80
 # Save png plots?
-Save = True
+Save_plots = True
+# Make FITS files?
+# Will only work if TiRiFiC is installed
+FITS = False

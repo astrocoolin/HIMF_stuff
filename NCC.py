@@ -98,6 +98,13 @@ class Galaxy:
        
         self.calc_dist(self.beams)
 
+        self.outname ='Cube_ba_'+str(self.beams)+".mass_"+str(round(self.MHI,5))+".inc_"+\
+                str(self.inc)+'.fits'
+	# folder name for completed cube
+        self.fname ="ba_"+str(self.beams)+".mass_"+str(round(self.MHI,5))+".inc_"+\
+                str(self.inc)
+
+
     def calc_dist(self,beams):
 	# distance calculations 
         self.beams=beams
@@ -168,7 +175,7 @@ class Galaxy:
             self.vrot = polyex.v_curve(radi)
             self.z = z.disp(radi,self.vrot)
 
-    def make_fits(self,realizations):
+    def make_fits(self):
         #self.make_plots(False)
         
         #Make_Output
@@ -192,18 +199,15 @@ class Galaxy:
         os.system("tirific deffile="+self.defname)
         print("Cube finished")
        
-        realizations = max(realizations,2)
-        for num in range(1,realizations):
-            filecheck = Path(self.fname+'.noise'+str(num))
-            if filecheck.is_dir():
-                os.system("rm -r "+self.fname+'.noise'+str(num))
-                print("Refreshed folder")
-            os.system("mkdir "+self.fname+'.noise'+str(num))
-            os.system("cp "+self.defname+" VROT.png SBR.png SBR_log.png RC.dat "+self.fname+'.noise'+str(num))
-            ######################################################################
-            print("realization #",num)
-            second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)
-            os.system("mv "+self.outname+" "+self.fname+'.noise'+str(num))
+        filecheck = Path(self.fname)
+        if filecheck.is_dir():
+            os.system("rm -r "+self.fname)
+            print("Refreshed folder")
+        os.system("mkdir "+self.fname)
+        os.system("cp "+self.defname+" RC.dat "+self.fname)
+        ######################################################################
+        second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)
+        os.system("mv "+self.outname+" "+self.fname)
         os.system("rm "+self.outname)
         os.system("rm empty.fits")
         os.system("rm  VROT.png SBR.png SBR_log.png RC.dat "+self.outset+" Logfile.log "+self.defname)
@@ -263,3 +267,7 @@ class Galaxy:
         if show:
             plt.savefig('VROT.png',bbox_inches='tight')
         plt.close()
+        filecheck = Path(self.fname)
+        if not filecheck.is_dir():
+        	os.system("mkdir "+self.fname)
+        os.system("mv VROT.png SBR.png SBR_log.png "+self.fname)
