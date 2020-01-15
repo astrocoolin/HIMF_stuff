@@ -9,7 +9,7 @@ from decimal import Decimal
 import random 
 import os
 
-def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DHI):
+def second_beam(outset,outname,rmax,ba,inc,mass,dist,cflux_min,beam_arcsec,DHI):
     hdulist = fits.open(outset)
     cube = hdulist[0].data
     scoop=np.sum(cube)*dist**2.*0.236*abs(hdulist[0].header['CDELT3'])/1000.
@@ -37,7 +37,6 @@ def second_beam(outset,outname,rmax,ba,sn,inc,mass,dist,cflux_min,beam_arcsec,DH
     smooth[smooth > cutoff]=1.
     mask = smooth 
 
-    noise = mean_signal/sn
     pixarea=np.pi * bmaj_sigma **2.* 2.
     noisescl = mean_signal/sn*bmaj_sigma*2*np.sqrt(np.pi)
     #rms = 0.75 # in mJy

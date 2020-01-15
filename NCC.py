@@ -11,137 +11,56 @@ from relations import *
 from science import second_beam
 
 class Galaxy:
-    def __init__(self):#self,MHI,DHI,Mstar,Ropt,vflat,dx,Rs,alpha,disp,rt,v_0,delta,beams,beamsize,snr,inc):
-       
-        self.snr = 8.0
+    def __init__(self):
+	# Inclination
         self.inc = 60
-        
+	# HI mass, HI diameter
         self.MHI = 9.5
         self.DHI = 33.9396044996648
-        
+	# Stellar Mass, Baryonic mass
         self.Mstar = 9.31760909803635
         self.Mbar = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
-        
+        # Optical Radius
         self.Ropt = 10.88891262333259
+	# 'Vflat' from BTFR
         self.vflat = 140.13278394294278
+	# sigma from vdisp
         self.sigma = 2.
-        
+	# Outer radius for cutoff 
         self.END = self.DHI
        
         ####
+	# for TiRiFiC, this is ring width
         self.rwidth = 2.5
+	# Number of beams across, beamsize in arcsec
         self.beams = 4.
         self.beamsize = 30.
         ####
-
+	# Polyex params
         self.alpha = 0.017
         self.rt = 8.431914405739636
         self.v_0 = 114.75505945574942
         self.dx = -0.025
         self.Rs = 3.0487
+
+	# Galaxy Magnitude
         self.Mag = -21.5
+	# outer slope shape (Dutton + 2019)
         self.slope = 0.0
+	# TiRiFiC file name
         self.defname ="cube_input.def"
         self.inset   ='empty.fits'
+	# output name for noiseless cube
         self.outset  ='Cube_base.fits'
+	# output name for completed cube
         self.outname ='Cube_ba_'+str(self.beams)+".mass_"+str(round(self.MHI,5))+".inc_"+\
-                str(self.inc)+".SN_"+str(self.snr)+'.fits'
+                str(self.inc)+'.fits'
+	# folder name for completed cube
         self.fname ="ba_"+str(self.beams)+".mass_"+str(round(self.MHI,5))+".inc_"+\
-                str(self.inc)+".SN_"+str(self.snr)
-
-    def example(self,vel):
-        if vel == 12:
-            self.MHI=7.0
-            self.DHI=1.6190216491867229
-            self.Mstar=6.395697326814118
-            self.Mbar = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
-            self.Ropt =4.19285376433691
-            self.Rs = 0.14571194842680504
-            self.vflat=30.90142073662264
-            self.END =  self.DHI
-            self.rwidth=2.5
-            self.alpha=-0.04
-            self.rt = 1.953269232143619
-            self.v_0 =38.27830523325882
-            self.dx = -0.06
-            self.Rs = 0.14571194842680504
-            self.Mag =-15.566999999988472
-            self.slope=0.7072740994972535
-        elif vel == 25:
-            self.MHI=7.5
-            self.DHI=3.405473493928381
-            self.Mstar=6.1049564614047735
-            self.Mbar = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
-            self.Ropt = 3.496871254588844
-            self.Rs = 0.3064926144535543
-            self.vflat = 39.72029382879143
-            self.END = self.DHI
-            self.rwidth = 2.5
-            self.alpha =0.156
-            self.rt = 1.7311970466119948
-            self.v_0 = 34.82190527193729
-            self.dx = -0.02
-            self.Rs = 0.3064926144535543
-            self.Mag = -14.881999999987634
-            self.slope = 0.638537433859023
-        elif vel == 50:
-            self.MHI   = 8.300000000006774 
-            self.DHI   = 8.36380249860862 
-            self.Mstar = 8.13596841863477 
-            self.Ropt  = 4.1071482878868135 
-            self.Rs    = 0.7527422248747758 
-            self.vflat = 48.264404070377765 
-            self.rwidth= 2.5 
-            self.alpha = -0.02899999999999999 
-            self.rt    = 1.5146795485236508 
-            self.v_0   = 56.11453292421927 
-            self.dx    = -0.024999999999999883 
-            self.Rs    = 0.7527422248747758 
-            self.Mag   = -17.842999999991253 
-            self.slope = 0.2621613304301969 
-            self.Mbar  = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI)) 
-            self.END   =  self.DHI
-        elif vel == 100:
-            self.MHI   = 9.200000000010656 
-            self.DHI   = 22.911995207696453 
-            self.Mstar = 9.676472179701443 
-            self.Ropt  = 4.578824805661171 
-            self.Rs    = 2.0620795686926807 
-            self.vflat = 109.42280453194861 
-            self.rwidth= 2.5 
-            self.alpha = 3.469446951953614e-17 
-            self.rt    = 1.1264317421095493 
-            self.v_0   = 111.34582088687199 
-            self.dx    = -0.0399999999999999 
-            self.Rs    = 2.0620795686926807 
-            self.Mag   = -20.72199999999477 
-            self.slope = 0.008900425198016178 
-            self.Mbar  = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI)) 
-            self.END   =  self.DHI
-
-        elif vel == 250:
-            self.MHI   = 10.500000000000222
-            self.DHI   = 96.84753464891496
-            self.Mstar = 11.413594821094087
-            self.Ropt  = 6.9736743042379725
-            self.Rs    = 8.716278118402347
-            self.vflat = 254.26947571120243
-            self.rwidth= 2.5
-            self.alpha = 3.469446951953614e-17
-            self.rt    = 0.9325062515078058
-            self.v_0   = 254.44415010281998
-            self.dx    = -0.05499999999999991
-            self.Rs    = 8.716278118402347
-            self.Mag   = -23.35499999999799
-            self.slope = 7.640228717874136e-12
-            self.Mbar  = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
-            self.END   =  self.DHI
-        else:
-            print("No example for that speed")
-
-        self.calc_dist(4)
+                str(self.inc)
 
     def save(self):
+	# stuff that gets output when you call save
         print(
         "\nself.MHI   =",self.MHI,
         "\nself.DHI   =",self.DHI,
@@ -162,8 +81,11 @@ class Galaxy:
 	)
 
 
-    def reroll(self,Mass,beams,scatter):
-        
+    def reroll(self,Mass,beams,inclination):
+        scatter = False
+        self.inc = inclination
+
+        # use this to set params for galaxy  of a given mass and resolution
         self.beams = beams
         self.beamsize = 30
         self.rwidth = 2.5
@@ -171,26 +93,33 @@ class Galaxy:
         self.MHI,self.DHI,self.Mstar,self.Ropt,self.vflat,self.sigma,self.alpha,self.rt,self.v_0,\
                 self.dx,self.Rs,self.Mag,self.slope=setup_relations(Mass,self.beams,self.beamsize,self.rwidth,scatter)
         
-
         self.Mbar = np.log10(10**(self.Mstar) + 1.4*10**(self.MHI))
         self.END = self.DHI
-        
+       
         self.calc_dist(self.beams)
-        #print(self.MHI, self.DHI, self.Mstar,self.vflat,self.alpha,self.Mag,self.DHI,self.slope,self.dist,self.dx,self.beams) 
 
     def calc_dist(self,beams):
+	# distance calculations 
         self.beams=beams
+	# sets what distance has to be based on mass and resolution
         self.dist = self.DHI * (206265./(self.beams*self.beamsize))
+	# tells you the physical distance between rings
         self.delta = (self.rwidth/206265.)*self.dist
+	# calculates the rings based on physical distance
         self.radi = np.arange(0,self.END+self.delta,self.delta)
-        
+	
+	# create polyex curve, sbr curve, z curve 
         self.polyex=self.Polyex(self.alpha,self.rt ,self.v_0)
         self.sbr = self.SBR(self.dx,self.Rs,self.DHI,self.vflat)
         self.z = self.Z(self.sigma)
-        
+	
+	# DHI in arcseconds 
         self.DHI_arcsec = self.DHI*206265./self.dist
+	# save the profiles to the object
         self.profiles=self.Profiles(self.polyex,self.sbr,self.radi,self.dist,self.z)
+
     class Polyex():
+	# polyex parameters
         def __init__(self,alpha,rt,v_0):
             self.alpha = alpha
             self.v_0 = v_0
@@ -198,6 +127,7 @@ class Galaxy:
         def v_curve(self,r):
             return self.v_0*(1.-np.exp(-r/self.rt))*(1.+self.alpha*r/self.rt)
     class Z():
+	# z profile parametrs
         def __init__(self,sigma):
             self.sigma = sigma
         def disp(self,radi,v):
@@ -210,6 +140,8 @@ class Galaxy:
             return z
 
     class SBR():
+	# calculate surface brightness profile
+	# see thesis for more
         def __init__(self,dx,Rs,DHI,vflat):
             self.dx = .36+ dx
             self.Rs = Rs
@@ -270,7 +202,7 @@ class Galaxy:
             os.system("cp "+self.defname+" VROT.png SBR.png SBR_log.png RC.dat "+self.fname+'.noise'+str(num))
             ######################################################################
             print("realization #",num)
-            second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.snr,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)
+            second_beam(self.outset,self.outname,self.END/ (self.dist) * 3600. * (180./np.pi),self.beams,self.inc,self.MHI,self.dist,1.0E-6,self.beamsize,self.DHI)
             os.system("mv "+self.outname+" "+self.fname+'.noise'+str(num))
         os.system("rm "+self.outname)
         os.system("rm empty.fits")
@@ -330,5 +262,4 @@ class Galaxy:
         ax3.xaxis.set_minor_locator(minorLocator)
         if show:
             plt.savefig('VROT.png',bbox_inches='tight')
-        plt.show()
         plt.close()
