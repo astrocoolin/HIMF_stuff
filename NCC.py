@@ -270,4 +270,12 @@ class Galaxy:
         filecheck = Path(self.fname)
         if not filecheck.is_dir():
         	os.system("mkdir "+self.fname)
-        os.system("mv VROT.png SBR.png SBR_log.png "+self.fname)
+        filecheck = Path(self.defname)
+        if filecheck.is_file(): os.system("rm "+self.defname)
+        
+        rothead(self.MHI,self.Mag,self.sigma,self.Mbar,self.Mstar,self.DHI,self.vflat,self.Rs,self.dist,self.slope,self.alpha,self.v_0,self.rt,self.Ropt,self.dx)
+        rotfile(self.profiles.radi,self.profiles.vrot,self.profiles.sbr,self.profiles.z,len(self.profiles.radi))
+        
+        deffile(self.outset,self.inset,self.defname,self.profiles.radi,self.profiles.vrot,self.profiles.sbr,self.inc,\
+            len(self.radi),8.0,self.profiles.z,5.0E-8)
+        os.system("mv VROT.png SBR.png SBR_log.png RC.dat "+self.defname+" "+self.fname)
